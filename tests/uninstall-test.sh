@@ -125,6 +125,74 @@ fixture pre-clean
 install_f >/dev/null
 check "exits zero" uninstall_f
 
+# ---- uninstall happy path ------------------------------------------------------
+
+echo "uninstall: fresh install, no backups — links removed, paths absent"
+fixture un-fresh
+install_f >/dev/null
+check "exits zero" uninstall_f
+for rel in "${MANAGED_FILES[@]}"; do
+  check "$rel absent" test_fails test -e "$FHOME/$rel"
+done
+check "parent dirs survive" test -d "$FHOME/agents"
+
+echo "uninstall: single backup is restored with content and mode"
+fixture un-restore
+mkdir -p "$FHOME"
+echo "user original" > "$FHOME/CLAUDE.md"
+chmod 600 "$FHOME/CLAUDE.md"
+install_f >/dev/null
+check "exits zero" uninstall_f
+check "content restored" grep -q "user original" "$FHOME/CLAUDE.md"
+check "not a symlink anymore" test_fails test -L "$FHOME/CLAUDE.md"
+check "mode restored" test "$(stat -f %Lp "$FHOME/CLAUDE.md")" = "600"
+leftover=$(find "$FHOME" -maxdepth 1 -name 'CLAUDE.md.backup-*' | wc -l | tr -d ' ')
+check "backup name consumed by the move" test "$leftover" = "0"
+
+echo "uninstall: backup that is a (dangling) symlink is moved, not dereferenced"
+fixture un-symlink
+mkdir -p "$FHOME"
+ln -s /nonexistent/target "$FHOME/CLAUDE.md"
+install_f >/dev/null
+check "exits zero" uninstall_f
+check "restored as symlink" test -L "$FHOME/CLAUDE.md"
+check "raw target preserved" test "$(readlink "$FHOME/CLAUDE.md")" = "/nonexistent/target"
+
+echo "uninstall: malformed backup suffixes are ignored"
+fixture un-malformed
+install_f >/dev/null
+echo junk > "$FHOME/CLAUDE.md.backup-notastamp"
+echo junk > "$FHOME/CLAUDE.md.backup-2026"
+check "exits zero" uninstall_f
+check "CLAUDE.md left absent (no valid backup)" test_fails test -e "$FHOME/CLAUDE.md"
+check "malformed files untouched" test -f "$FHOME/CLAUDE.md.backup-notastamp"
+
+echo "uninstall: unrelated files are never touched"
+fixture un-unrelated
+mkdir -p "$FHOME"
+echo "{}" > "$FHOME/settings.json"
+install_f >/dev/null
+check "exits zero" uninstall_f
+check "settings.json intact" grep -q "{}" "$FHOME/settings.json"
+
+echo "uninstall: DRY_RUN=1 prints a plan and changes nothing"
+fixture un-dry
+mkdir -p "$FHOME"
+echo "user original" > "$FHOME/CLAUDE.md"
+install_f >/dev/null
+before=$(snapshot "$FHOME")
+out=$(DRY_RUN=1 uninstall_f)
+check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
+check "plan mentions restore" grep -q "restore" <<<"$out"
+check "plan mentions leave-absent" grep -q "leave" <<<"$out"
+
+echo "uninstall: bad DRY_RUN value fails before changing anything"
+fixture un-badflag
+install_f >/dev/null
+before=$(snapshot "$FHOME")
+check "exits nonzero" test_fails env DRY_RUN=yes CLAUDE_HOME="$FHOME" bash "$FREPO/uninstall.sh"
+check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
+
 # ---- summary -------------------------------------------------------------------
 
 echo

@@ -47,4 +47,94 @@ if (( ${#conflicts[@]} > 0 )); then
   exit 1
 fi
 
-echo "Preflight ok."
+# ---- discover backups; decide what to restore --------------------------------
+
+stamp_pat='\.backup-[0-9]{8}-[0-9]{6}$'
+choices=()   # parallel to MANAGED_FILES: backup to restore, "" for none
+
+for rel in "${MANAGED_FILES[@]}"; do
+  dst="$DEST/$rel"
+
+  candidates=()   # fixed-width stamps make glob order chronological
+  for b in "$dst".backup-*; do
+    [[ -e "$b" || -L "$b" ]] || continue   # unmatched glob stays a literal
+    [[ "$b" =~ $stamp_pat ]] || continue   # ignore malformed names
+    candidates+=("$b")
+  done
+
+  if (( ${#candidates[@]} <= 1 )); then
+    choices+=("${candidates[0]-}")
+    continue
+  fi
+
+  echo "error: $rel has ${#candidates[@]} backups and no way to choose one:" >&2
+  for b in "${candidates[@]}"; do echo "  ${b#"$DEST"/}" >&2; done
+  echo "Re-run interactively, or move aside the backups you don't want restored." >&2
+  exit 1
+done
+
+# ---- validate the whole plan before touching anything -------------------------
+
+i=0
+for rel in "${MANAGED_FILES[@]}"; do
+  dst="$DEST/$rel"; sel="${choices[i]}"; i=$((i + 1))
+  if [[ ! -L "$dst" || "$(readlink "$dst")" != "$REPO/$rel" ]]; then
+    echo "error: $rel changed while the plan was being made — nothing changed." >&2
+    exit 1
+  fi
+  if [[ -n "$sel" && ! -e "$sel" && ! -L "$sel" ]]; then
+    echo "error: ${sel#"$DEST"/} disappeared — nothing changed." >&2
+    exit 1
+  fi
+done
+
+# ---- the plan ------------------------------------------------------------------
+
+echo "Plan for $DEST:"
+i=0
+for rel in "${MANAGED_FILES[@]}"; do
+  sel="${choices[i]}"; i=$((i + 1))
+  echo "  remove   $rel"
+  if [[ -n "$sel" ]]; then
+    echo "  restore  ${sel#"$DEST"/}"
+  else
+    echo "  leave    $rel absent (no backup)"
+  fi
+done
+
+if [[ "$DRY_RUN" == 1 ]]; then
+  echo "DRY RUN — nothing was changed."
+  exit 0
+fi
+
+# ---- execute -------------------------------------------------------------------
+
+removed=0; restored=0; absent=0
+i=0
+for rel in "${MANAGED_FILES[@]}"; do
+  dst="$DEST/$rel"; sel="${choices[i]}"; i=$((i + 1))
+
+  # last-instant recheck; on failure report what already completed
+  if [[ ! -L "$dst" || "$(readlink "$dst")" != "$REPO/$rel" ]]; then
+    echo "error: $rel changed mid-run — stopping." >&2
+    echo "Completed before stopping: $removed removed, $restored restored." >&2
+    exit 1
+  fi
+  if [[ -n "$sel" && ! -e "$sel" && ! -L "$sel" ]]; then
+    echo "error: ${sel#"$DEST"/} disappeared mid-run — stopping." >&2
+    echo "Completed before stopping: $removed removed, $restored restored." >&2
+    exit 1
+  fi
+
+  rm "$dst"
+  removed=$((removed + 1))
+
+  if [[ -n "$sel" ]]; then
+    mv "$sel" "$dst"
+    restored=$((restored + 1))
+  else
+    absent=$((absent + 1))
+  fi
+done
+
+echo "Done: $removed symlinks removed, $restored backups restored, $absent paths left absent."
