@@ -24,6 +24,24 @@ rather than copies, so editing either path edits the same file.
 
 `settings.json` is **not** linked — see below.
 
+To undo an install:
+
+```bash
+DRY_RUN=1 ./uninstall.sh   # preflight + backup selection + exact plan, no changes
+./uninstall.sh
+```
+
+It removes only symlinks that point into this repo, then restores the
+`.backup-<timestamp>` files install.sh created. If anything at a managed
+path is *not* owned by this repo — a plain file, someone else's symlink, a
+missing path — it lists every conflict and exits without changing anything.
+A file with several backups gets a numbered prompt (it refuses to guess,
+and refuses to run non-interactively until you thin the backups out). A
+path that had no backup is removed and left absent, because nothing was
+there before install. Uninstalling twice is safe but the second run exits
+nonzero: with no record of *why* the paths are gone, it reports them as
+conflicts rather than claiming success.
+
 ## What's here
 
 | File | What it does |
@@ -34,6 +52,9 @@ rather than copies, so editing either path edits the same file.
 | `commands/adversarial-review.md` | `/adversarial-review` — stage 3 on demand. |
 | `commands/gpt-brainstorm.md` | `/gpt-brainstorm` — stage 1 on demand. |
 | `settings.json` | Plugins and UI prefs. Merge by hand. |
+| `managed-files.sh` | The one list of managed paths both scripts source. |
+| `uninstall.sh` | Removes the symlinks and restores the backups; conservative to a fault. See Install. |
+| `tests/uninstall-test.sh` | Self-contained regression suite for both scripts (runs in a throwaway tmpdir). |
 
 ## Requirements
 

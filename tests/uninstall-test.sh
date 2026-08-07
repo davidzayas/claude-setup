@@ -242,6 +242,16 @@ before=$(snapshot "$FHOME")
 DRY_RUN=1 CLAUDE_HOME="$FHOME" run_pty "1" bash "$FREPO/uninstall.sh" >/dev/null
 check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
 
+# ---- uninstall: rerun ------------------------------------------------------------
+
+echo "uninstall: second run reports conflicts, changes nothing"
+fixture rerun
+install_f >/dev/null
+uninstall_f >/dev/null
+before=$(snapshot "$FHOME")
+check "second run exits nonzero" test_fails uninstall_f
+check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
+
 # ---- summary -------------------------------------------------------------------
 
 echo
