@@ -16,13 +16,7 @@ DEST="${CLAUDE_HOME:-$HOME/.claude}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 DRY_RUN="${DRY_RUN:-0}"
 
-FILES=(
-  CLAUDE.md
-  agents/codex-adversary.md
-  commands/adversarial-review.md
-  commands/gpt-brainstorm.md
-  skills/gpt-brainstorming/SKILL.md
-)
+source "$REPO/managed-files.sh"
 
 link() {
   local rel="$1" src="$REPO/$1" dst="$DEST/$1"
@@ -43,7 +37,7 @@ link() {
 
 [[ "$DRY_RUN" == "1" ]] && echo "DRY RUN — nothing will be changed."
 echo "Linking into $DEST"
-for f in "${FILES[@]}"; do link "$f"; done
+for f in "${MANAGED_FILES[@]}"; do link "$f"; done
 
 echo
 echo "settings.json is NOT linked — yours almost certainly has keys this repo"
