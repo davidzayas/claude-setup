@@ -25,6 +25,20 @@ check() {
 # test_fails <command...> — succeeds iff the command exits nonzero
 test_fails() { if "$@" >/dev/null 2>&1; then return 1; else return 0; fi; }
 
+# run_pty <input-lines> <command...> — run the command on a pseudo-terminal
+# (so [[ -t 0 ]] is true) feeding it input. BSD and util-linux `script`
+# disagree on syntax; try BSD (macOS) first.
+run_pty() {
+  local input="$1"; shift
+  # keep the writer open briefly: BSD script forwards EOF from a closed
+  # stdin pipe before the buffered input reaches the child's pty
+  if script -q /dev/null true >/dev/null 2>&1; then
+    { printf '%s\n' "$input"; sleep 1; } | script -q /dev/null "$@"
+  else
+    { printf '%s\n' "$input"; sleep 1; } | script -qec "$*" /dev/null
+  fi
+}
+
 # fixture <name> — builds $TMP/<name>/{repo,home}, sets FREPO and FHOME.
 # The fixture repo holds copies of the scripts plus dummy managed files, so
 # tests never depend on the real repo's content and every mv/ln stays in $TMP.
@@ -191,6 +205,41 @@ fixture un-badflag
 install_f >/dev/null
 before=$(snapshot "$FHOME")
 check "exits nonzero" test_fails env DRY_RUN=yes CLAUDE_HOME="$FHOME" bash "$FREPO/uninstall.sh"
+check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
+
+# ---- uninstall: multiple backups -----------------------------------------------
+
+# make_two_backups — fixture with two valid backup candidates for CLAUDE.md
+make_two_backups() {
+  fixture "$1"
+  mkdir -p "$FHOME"
+  echo "older original" > "$FHOME/CLAUDE.md"
+  install_f >/dev/null
+  # forge a second, later-stamped backup alongside the installer's real one
+  echo "newer original" > "$FHOME/CLAUDE.md.backup-20990101-000000"
+}
+
+echo "uninstall: multiple backups + no terminal = refuse, unchanged"
+make_two_backups multi-notty
+before=$(snapshot "$FHOME")
+check "exits nonzero" test_fails uninstall_f
+check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
+
+echo "uninstall: menu selection restores the chosen backup"
+make_two_backups multi-pick
+CLAUDE_HOME="$FHOME" run_pty "2" bash "$FREPO/uninstall.sh" >/dev/null
+check "picked the second (newer) candidate" grep -q "newer original" "$FHOME/CLAUDE.md"
+check "unselected backup untouched" ls "$FHOME"/CLAUDE.md.backup-* >/dev/null
+
+echo "uninstall: garbage input is re-prompted, then honored"
+make_two_backups multi-garbage
+CLAUDE_HOME="$FHOME" run_pty "$(printf 'x\n9\n1')" bash "$FREPO/uninstall.sh" >/dev/null
+check "eventually restored first candidate" grep -q "older original" "$FHOME/CLAUDE.md"
+
+echo "uninstall: DRY_RUN with interactive selection changes nothing"
+make_two_backups multi-dry
+before=$(snapshot "$FHOME")
+DRY_RUN=1 CLAUDE_HOME="$FHOME" run_pty "1" bash "$FREPO/uninstall.sh" >/dev/null
 check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
 
 # ---- summary -------------------------------------------------------------------

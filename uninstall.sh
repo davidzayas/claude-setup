@@ -67,10 +67,32 @@ for rel in "${MANAGED_FILES[@]}"; do
     continue
   fi
 
-  echo "error: $rel has ${#candidates[@]} backups and no way to choose one:" >&2
-  for b in "${candidates[@]}"; do echo "  ${b#"$DEST"/}" >&2; done
-  echo "Re-run interactively, or move aside the backups you don't want restored." >&2
-  exit 1
+  if [[ ! -t 0 ]]; then
+    echo "error: $rel has ${#candidates[@]} backups and no terminal to choose one:" >&2
+    for b in "${candidates[@]}"; do echo "  ${b#"$DEST"/}" >&2; done
+    echo "Re-run interactively, or move aside the backups you don't want restored." >&2
+    exit 1
+  fi
+
+  echo "$rel has ${#candidates[@]} backups (oldest first):"
+  n=1
+  for b in "${candidates[@]}"; do
+    extra=""
+    [[ -L "$b" ]] && extra="   (symlink -> $(readlink "$b"))"
+    echo "  $n) ${b#"$DEST"/}$extra"
+    n=$((n + 1))
+  done
+  while :; do
+    if ! read -r -p "Restore which? [1-${#candidates[@]}] " pick; then
+      echo "Aborted — nothing changed." >&2
+      exit 1
+    fi
+    if [[ "$pick" =~ ^[0-9]+$ ]] && (( 10#$pick >= 1 && 10#$pick <= ${#candidates[@]} )); then
+      break
+    fi
+    echo "Enter a number between 1 and ${#candidates[@]}."
+  done
+  choices+=("${candidates[10#$pick - 1]}")
 done
 
 # ---- validate the whole plan before touching anything -------------------------
