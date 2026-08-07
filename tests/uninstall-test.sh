@@ -22,6 +22,9 @@ check() {
   if "$@" >/dev/null 2>&1; then ok "$desc"; else bad "$desc"; fi
 }
 
+# test_fails <command...> — succeeds iff the command exits nonzero
+test_fails() { if "$@" >/dev/null 2>&1; then return 1; else return 0; fi; }
+
 # fixture <name> — builds $TMP/<name>/{repo,home}, sets FREPO and FHOME.
 # The fixture repo holds copies of the scripts plus dummy managed files, so
 # tests never depend on the real repo's content and every mv/ln stays in $TMP.
@@ -79,6 +82,48 @@ fixture inst-dry
 before=$(snapshot "$FHOME")
 DRY_RUN=1 install_f >/dev/null
 check "home unchanged after dry-run install" test "$(snapshot "$FHOME")" = "$before"
+
+# ---- uninstall preflight -------------------------------------------------------
+
+echo "uninstall: regular file is a conflict, nothing changes"
+fixture pre-regular
+install_f >/dev/null
+rm "$FHOME/CLAUDE.md"
+echo "user file" > "$FHOME/CLAUDE.md"
+before=$(snapshot "$FHOME")
+check "exits nonzero" test_fails uninstall_f
+check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
+
+echo "uninstall: wrong-target symlink is a conflict"
+fixture pre-foreign
+install_f >/dev/null
+rm "$FHOME/agents/codex-adversary.md"
+ln -s /etc/hosts "$FHOME/agents/codex-adversary.md"
+before=$(snapshot "$FHOME")
+check "exits nonzero" test_fails uninstall_f
+check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
+
+echo "uninstall: missing path (partial install) blocks everything"
+fixture pre-partial
+install_f >/dev/null
+rm "$FHOME/commands/gpt-brainstorm.md"
+before=$(snapshot "$FHOME")
+check "exits nonzero" test_fails uninstall_f
+check "no managed link was removed" test -L "$FHOME/CLAUDE.md"
+check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
+
+echo "uninstall: directory at a managed path is a conflict"
+fixture pre-dir
+install_f >/dev/null
+rm "$FHOME/CLAUDE.md"
+mkdir "$FHOME/CLAUDE.md"
+check "exits nonzero" test_fails uninstall_f
+check "directory still there" test -d "$FHOME/CLAUDE.md"
+
+echo "uninstall: clean install passes preflight"
+fixture pre-clean
+install_f >/dev/null
+check "exits zero" uninstall_f
 
 # ---- summary -------------------------------------------------------------------
 
