@@ -177,9 +177,11 @@ fixture un-malformed
 install_f >/dev/null
 echo junk > "$FHOME/CLAUDE.md.backup-notastamp"
 echo junk > "$FHOME/CLAUDE.md.backup-2026"
+echo junk > "$FHOME/CLAUDE.md.backup-junk.backup-20990101-000000"
 check "exits zero" uninstall_f
 check "CLAUDE.md left absent (no valid backup)" test_fails test -e "$FHOME/CLAUDE.md"
 check "malformed files untouched" test -f "$FHOME/CLAUDE.md.backup-notastamp"
+check "double-suffix name untouched" test -f "$FHOME/CLAUDE.md.backup-junk.backup-20990101-000000"
 
 echo "uninstall: unrelated files are never touched"
 fixture un-unrelated
@@ -222,7 +224,7 @@ make_two_backups() {
 echo "uninstall: multiple backups + no terminal = refuse, unchanged"
 make_two_backups multi-notty
 before=$(snapshot "$FHOME")
-check "exits nonzero" test_fails uninstall_f
+check "exits nonzero" test_fails uninstall_f </dev/null
 check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
 
 echo "uninstall: menu selection restores the chosen backup"

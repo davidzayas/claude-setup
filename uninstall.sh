@@ -49,16 +49,16 @@ fi
 
 # ---- discover backups; decide what to restore --------------------------------
 
-stamp_pat='\.backup-[0-9]{8}-[0-9]{6}$'
+stamp_pat='^\.backup-[0-9]{8}-[0-9]{6}$'
 choices=()   # parallel to MANAGED_FILES: backup to restore, "" for none
 
 for rel in "${MANAGED_FILES[@]}"; do
   dst="$DEST/$rel"
 
-  candidates=()   # fixed-width stamps make glob order chronological
+  candidates=()   # fixed-width stamps make glob order chronological among these
   for b in "$dst".backup-*; do
     [[ -e "$b" || -L "$b" ]] || continue   # unmatched glob stays a literal
-    [[ "$b" =~ $stamp_pat ]] || continue   # ignore malformed names
+    [[ "${b#"$dst"}" =~ $stamp_pat ]] || continue   # ignore malformed names
     candidates+=("$b")
   done
 
@@ -152,6 +152,13 @@ for rel in "${MANAGED_FILES[@]}"; do
   removed=$((removed + 1))
 
   if [[ -n "$sel" ]]; then
+    # last-instant guard: never restore onto something that reappeared
+    if [[ -e "$dst" || -L "$dst" ]]; then
+      echo "error: something reappeared at $rel before restore — stopping." >&2
+      echo "Completed before stopping: $removed removed, $restored restored." >&2
+      echo "The chosen backup is still at ${sel#"$DEST"/}." >&2
+      exit 1
+    fi
     mv "$sel" "$dst"
     restored=$((restored + 1))
   else
