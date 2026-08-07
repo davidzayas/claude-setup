@@ -25,6 +25,9 @@ check() {
 # test_fails <command...> — succeeds iff the command exits nonzero
 test_fails() { if "$@" >/dev/null 2>&1; then return 1; else return 0; fi; }
 
+# present <path> — true if anything is at the path, including a dangling symlink
+present() { [[ -e "$1" || -L "$1" ]]; }
+
 # run_pty <input-lines> <command...> — run the command on a pseudo-terminal
 # (so [[ -t 0 ]] is true) feeding it input. BSD and util-linux `script`
 # disagree on syntax; try BSD (macOS) first.
@@ -146,7 +149,7 @@ fixture un-fresh
 install_f >/dev/null
 check "exits zero" uninstall_f
 for rel in "${MANAGED_FILES[@]}"; do
-  check "$rel absent" test_fails test -e "$FHOME/$rel"
+  check "$rel absent" test_fails present "$FHOME/$rel"
 done
 check "parent dirs survive" test -d "$FHOME/agents"
 
@@ -179,7 +182,7 @@ echo junk > "$FHOME/CLAUDE.md.backup-notastamp"
 echo junk > "$FHOME/CLAUDE.md.backup-2026"
 echo junk > "$FHOME/CLAUDE.md.backup-junk.backup-20990101-000000"
 check "exits zero" uninstall_f
-check "CLAUDE.md left absent (no valid backup)" test_fails test -e "$FHOME/CLAUDE.md"
+check "CLAUDE.md left absent (no valid backup)" test_fails present "$FHOME/CLAUDE.md"
 check "malformed files untouched" test -f "$FHOME/CLAUDE.md.backup-notastamp"
 check "double-suffix name untouched" test -f "$FHOME/CLAUDE.md.backup-junk.backup-20990101-000000"
 

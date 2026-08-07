@@ -148,7 +148,11 @@ for rel in "${MANAGED_FILES[@]}"; do
     exit 1
   fi
 
-  rm "$dst"
+  if ! rm "$dst"; then
+    echo "error: could not remove $rel — stopping." >&2
+    echo "Completed before stopping: $removed removed, $restored restored." >&2
+    exit 1
+  fi
   removed=$((removed + 1))
 
   if [[ -n "$sel" ]]; then
@@ -159,7 +163,12 @@ for rel in "${MANAGED_FILES[@]}"; do
       echo "The chosen backup is still at ${sel#"$DEST"/}." >&2
       exit 1
     fi
-    mv "$sel" "$dst"
+    if ! mv "$sel" "$dst"; then
+      echo "error: could not restore ${sel#"$DEST"/} — stopping." >&2
+      echo "Completed before stopping: $removed removed, $restored restored." >&2
+      echo "The chosen backup is still at ${sel#"$DEST"/}." >&2
+      exit 1
+    fi
     restored=$((restored + 1))
   else
     absent=$((absent + 1))
