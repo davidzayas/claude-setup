@@ -122,6 +122,38 @@ check_second_opinion() {
     "gpt-brainstorm: documents --model option"
 }
 
+check_todo() {
+  if [[ ! -f "$REPO/TODO.md" ]]; then
+    fail "TODO.md exists at repo root"
+    return
+  fi
+  pass "TODO.md exists at repo root"
+
+  # Only lines that ARE entries (start with the checkbox) are validated;
+  # the documented format line in prose starts with a backtick and is skipped.
+  local bad dupes
+  bad="$(grep -n '^- \[ \] prompt-variant' "$REPO/TODO.md" \
+    | grep -Ev 'prompt-variant: role=(ideation|second-opinion|review) model=[^ ]+$' || true)"
+  if [[ -z "$bad" ]]; then
+    pass "TODO.md: all prompt-variant entries match the schema"
+  else
+    fail "TODO.md: malformed prompt-variant entries: $bad"
+  fi
+
+  dupes="$(grep '^- \[ \] prompt-variant' "$REPO/TODO.md" | sort | uniq -d)"
+  if [[ -z "$dupes" ]]; then
+    pass "TODO.md: no duplicate role/model pairs"
+  else
+    fail "TODO.md: duplicate entries: $dupes"
+  fi
+
+  if grep -q 'TODO.md' "$REPO/managed-files.sh"; then
+    fail "managed-files.sh must NOT include TODO.md"
+  else
+    pass "managed-files.sh does not include TODO.md"
+  fi
+}
+
 check_claude_md() {
   exactly_once CLAUDE.md '^gpt_brainstorm_model:' \
     "CLAUDE.md: gpt_brainstorm_model exactly once"
@@ -143,6 +175,7 @@ main() {
   check_review_agent
   check_review_command
   check_second_opinion
+  check_todo
   exit "$FAIL"
 }
 
