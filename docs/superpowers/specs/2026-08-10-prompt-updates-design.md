@@ -225,9 +225,13 @@ At runtime:
 1. Resolve the canonical target of `~/.claude/CLAUDE.md`.
 2. Verify its parent contains the expected `claude-setup` prompt paths.
 3. Append the normalized entry only if that role/model pair is absent.
-4. If resolution or writing fails, warn and return the exact entry for manual
-   recording.
-5. Never write a TODO into the active project as a fallback.
+4. If symlink resolution fails, the current repo may be used only after
+   verifying it is claude-setup itself (`managed-files.sh` and all five
+   managed prompt paths present) — this covers running inside a fresh clone
+   before `install.sh` has run.
+5. If resolution and the current-repo check both fail, warn and return the
+   exact entry for manual recording. Never write a TODO into any other
+   project as a fallback.
 
 ## 3. Data flow
 
@@ -350,8 +354,11 @@ existing `tests/uninstall-test.sh`), not a general eval framework. It verifies:
 - `TODO.md` entries match the normalized schema and contain no duplicate
   role/model pairs.
 - `TODO.md` is not added to `managed-files.sh`.
-- The fixed prompt material stays below an explicit byte allowance, leaving
-  room within the 20KB session budget for task context.
+- Each composed baseline-plus-overlay prompt (measured per role/model
+  composition, not in aggregate) stays below `MAX_FIXED_PROMPT_BYTES=12288`,
+  defined at the top of `tests/prompt-contract-test.sh`. This leaves roughly
+  8KB per session for task context and accumulated turns within the 20KB
+  working budget.
 
 Run the existing installer/uninstaller regression suite as well, confirming
 the five-file symlink manifest and install behavior remain unchanged.
@@ -373,8 +380,8 @@ and output byte counts; pass/fail for each required contract; unexpected
 verbosity, omissions, role drift, or false positives; and the smallest prompt
 adjustment justified by a failure.
 
-Store a compact result document such as
-`docs/prompt-smoke-2026-08-10-gpt-5.6-sol.md`; do not commit full transcripts
+Store a compact result document at `docs/prompt-smoke-<YYYY-MM-DD>-<model>.md`
+(one file per smoke run); do not commit full transcripts
 or build scoring infrastructure. If a case fails, make one surgical prompt
 change and rerun that same case before broadening the overlay.
 
