@@ -87,6 +87,26 @@ check_ideation() {
     "SKILL.md: read-only codex rule present"
 }
 
+check_review_agent() {
+  check_role_pack review agents/codex-adversary.md review
+  contains agents/codex-adversary.md '20KB' \
+    "codex-adversary: states 20KB working budget"
+  contains agents/codex-adversary.md '30KB' \
+    "codex-adversary: states 30KB hard boundary"
+  contains agents/codex-adversary.md 'read-only' \
+    "codex-adversary: read-only rule present"
+  contains agents/codex-adversary.md 'Never retry a timed-out payload unchanged' \
+    "codex-adversary: unchanged-timeout prohibition present"
+  contains agents/codex-adversary.md '## Verdict' \
+    "codex-adversary: Verdict heading present"
+  contains agents/codex-adversary.md '## Findings' \
+    "codex-adversary: Findings heading present"
+  contains agents/codex-adversary.md '## Discarded' \
+    "codex-adversary: Discarded heading present"
+  contains agents/codex-adversary.md '## Reviewer disagreements' \
+    "codex-adversary: Reviewer disagreements heading present"
+}
+
 check_claude_md() {
   exactly_once CLAUDE.md '^gpt_brainstorm_model:' \
     "CLAUDE.md: gpt_brainstorm_model exactly once"
@@ -105,6 +125,7 @@ main() {
   echo "prompt-contract-test: $REPO"
   check_claude_md
   check_ideation
+  check_review_agent
   exit "$FAIL"
 }
 

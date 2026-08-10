@@ -22,9 +22,15 @@ modify files.
      task context you were given). A reviewer without intent context produces
      generic feedback.
 
-2. **Dispatch to Codex.** Call the `codex` MCP tool with:
+2. **Dispatch to Codex.** Your caller passes the resolved model and its
+   variant status (tuned overlay or generic baseline) — model resolution and
+   TODO side effects are the caller's job, not yours. Call the `codex` MCP
+   tool with:
    - sandbox set to **read-only** (the reviewer must never write)
-   - a prompt built from the template below
+   - the model you were given, via the model parameter
+   - a prompt composed from the baseline below plus the overlay matching the
+     resolved model if one exists in this file (baseline first; exact
+     model-id match only)
    - the diff/files and context you assembled
 
    **Size discipline — the server hangs silently on large payloads.** Measure
@@ -34,8 +40,9 @@ modify files.
    single-document reviews on the same day succeeded and returned genuine
    HIGH-severity findings.
 
-   - **Keep any one session under ~30KB of payload total.** Not per message —
-     per session. Chunking a 90KB review into three `codex-reply` messages
+   - **Keep any one session at or below a 20KB working budget; 30KB is the
+     hard danger boundary at which a payload is unsendable.** Not per
+     message — per session. Chunking a 90KB review into three `codex-reply` messages
      still accumulates 90KB in that session's context and still hangs. This
      is the mistake that caused the outage above.
    - **Above that, split into SEPARATE sessions**, each scoped to one module,
@@ -50,20 +57,36 @@ modify files.
      and what each session covered, and name anything cross-cutting that no
      single session could see.
 
-3. **Adversarial framing — use this prompt template:**
+3. **Adversarial framing — compose baseline + overlay:**
 
-   > You are a hostile senior reviewer performing a pre-merge review. The
-   > author is a competent engineer, so do not report style nits or
-   > restate the diff. Hunt specifically for: race conditions and
-   > concurrency hazards; unhandled error paths and missing null/undefined
-   > checks; edge cases in boundary conditions (empty, max, unicode,
-   > timezone, offline); security issues (injection, authz gaps, secrets,
-   > unsafe deserialization); resource leaks; and violations of the stated
-   > intent — places where the code does something subtly different from
-   > what it claims. For each finding: severity (CRITICAL/HIGH/MEDIUM/LOW),
-   > file:line, the failure scenario as a concrete sequence of events, and
-   > the minimal fix. If you find nothing at a severity level, say so
-   > explicitly. Do not pad. Intent of this change: {intent}. Code: {payload}
+<!-- gpt-baseline:review:begin -->
+You are an evidence-bound, adversarial pre-merge code reviewer.
+
+Stated intent:
+{intent}
+
+Supplied review scope:
+{payload}
+
+Review only the supplied scope. Do not request unrelated files. Look for race conditions and concurrency faults; unhandled errors and missing null/undefined checks; boundary failures involving empty or maximum values, Unicode, time zones, or offline behavior; injection, authorization gaps, exposed secrets, or unsafe deserialization; resource leaks; and violations of the stated intent.
+
+Report a finding only when the supplied code supports a plausible failure. Assign CRITICAL, HIGH, MEDIUM, or LOW according to both impact and likelihood. Consolidate findings with the same root cause.
+
+For every finding provide:
+- file:line
+- the concrete failure
+- the event sequence that triggers it
+- impact and likelihood
+- the minimal fix
+
+Output sections in this order: CRITICAL, HIGH, MEDIUM, LOW. Under every empty severity section, write "None found."
+
+Exclude style preferences, diff restatements, duplicate root causes, and unsupported speculation.
+<!-- gpt-baseline:review:end -->
+
+<!-- gpt-overlay:review:gpt-5.6-sol:begin -->
+The baseline is authoritative; this overlay only tunes communication. Favor fewer evidence-backed findings over speculative coverage. Preserve concrete failure sequences and the required reporting for every severity level despite compressed prose. Consolidate all findings sharing a root cause.
+<!-- gpt-overlay:review:gpt-5.6-sol:end -->
 
 4. **Quality-gate the response.** Discard findings that are: restatements of
    the diff, pure style preferences, or provably wrong (verify suspicious
