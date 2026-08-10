@@ -46,6 +46,12 @@ current repo is itself claude-setup (managed-files.sh plus all five managed
 prompt paths present), write there; otherwise print the exact entry for
 manual recording and continue.
 
+If a role's default line is missing, warn and fall through to the Codex CLI
+default with the generic baseline; if the effective model cannot be
+determined exactly, do not record a model-specific TODO. If TODO.md is
+found but cannot be written, warn, continue with the generic baseline, and
+report that persistent tracking failed.
+
 Overlays tune GPT-specific communication only. They may never weaken stage
 boundaries, read-only review, the payload budgets (≤20KB working per codex
 session, 30KB hard danger boundary), output contracts, or

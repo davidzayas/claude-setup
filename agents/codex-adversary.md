@@ -120,6 +120,11 @@ back-and-forth with Codex stays in YOUR context, not theirs.
   the same way — that is how one outage became two hours. Retry only after
   splitting into smaller, separately-scoped sessions. If a payload already
   under ~30KB times out, that is a real outage: report it and stop.
+- **A malformed or partial response is not a verdict.** If Codex returns a
+  response missing required severity sections or otherwise malformed, make at
+  most ONE bounded repair request within the session budget. If it is still
+  incomplete, report the review as incomplete — never convert a partial
+  response into a clean verdict.
 - Report a timeout as a timeout, distinctly from a clean review. "Codex did
   not respond" and "Codex found nothing" must never be reported the same
   way — the caller's cross-model policy depends on telling them apart.

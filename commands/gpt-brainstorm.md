@@ -11,9 +11,10 @@ the accepted syntax and stop rather than guessing.)
 
 Model routing: use the `--model` value if given, else
 `gpt_second_opinion_model:` from CLAUDE.md, else the Codex CLI default. If no
-overlay below matches the resolved model exactly, warn the user, use the
-baseline alone, and record the missing variant in the claude-setup repo's
-TODO.md per the "GPT model routing" rules in CLAUDE.md.
+overlay below matches the resolved model exactly, warn the user ("no tuned
+variant for <model>; using the generic baseline"), use the baseline alone,
+and record the missing variant (role=second-opinion) in the claude-setup
+repo's TODO.md per the "GPT model routing" rules in CLAUDE.md.
 
 Protocol — keep the two perspectives genuinely independent:
 
