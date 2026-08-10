@@ -64,7 +64,9 @@ excerpts pasted mid-session.
   open questions, approved sections. Before the session approaches the 20KB
   working budget, re-seed proactively — start a fresh session from the
   ledger, not the full transcript. Continuity comes from the ledger, not the
-  thread id.
+  thread id. A re-seed prompt is: the baseline plus the matching overlay,
+  then the ledger, then one line stating the current phase and the expected
+  next output.
 - A hang is not the same as GPT being unavailable. If a re-seeded, small
   session still hangs, that is a genuine outage: stop and tell the user, per
   the role contract above.

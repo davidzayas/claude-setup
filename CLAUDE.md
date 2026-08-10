@@ -24,7 +24,11 @@ user rather than silently substituting Claude for GPT's role.
 
 Per-role model defaults. Resolution order for every GPT call: an explicit
 model named in the invocation wins, then the role's line below, then the
-Codex CLI default from ~/.codex/config.toml.
+Codex CLI default from ~/.codex/config.toml. For the slash commands that
+accept --model, that flag is the SOLE explicit-override mechanism —
+free-text model mentions inside their arguments are not overrides. The
+"named in the invocation" rule applies to skill invocations (e.g.
+"brainstorm X with o3-pro" via the gpt-brainstorming skill).
 
 gpt_brainstorm_model: gpt-5.6-sol
 gpt_second_opinion_model: gpt-5.6-sol
@@ -37,7 +41,8 @@ name. If no overlay exists for the resolved model: warn the user before
 dispatch, use the generic baseline alone, and record the missing variant in
 the claude-setup repo's TODO.md as
 `- [ ] prompt-variant: role=<role> model=<exact-model-id>` (one entry per
-role/model pair; skip if already present).
+role/model pair; skip if already present). Re-read TODO.md immediately
+before appending, so concurrent sessions do not write duplicates.
 
 TODO.md lives in the claude-setup source repo, never the active project.
 Locate it by resolving the symlink target of `~/.claude/CLAUDE.md` and

@@ -20,3 +20,4 @@ role/model pair:
 - [ ] test-hardening: measure byte cap for every overlay present, not just the configured default
 - [ ] test-hardening: TODO dupe check is exact-line only ("- [x]" variant escapes it)
 - [ ] test-hardening: stop-on-MCP-failure string checked only in CLAUDE.md, not SKILL.md/codex-adversary.md
+- [ ] prompt-tuning: align the ideation overlay's skip-clarification trigger with the baseline's required categories (purpose, constraints, success criteria, risky assumptions) and rerun the ideation smoke cases (adversarial-review finding, accepted debt)

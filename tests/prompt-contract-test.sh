@@ -21,6 +21,13 @@ exactly_once() {
   if [[ "$n" == "1" ]]; then pass "$3"; else fail "$3 (found $n, want 1)"; fi
 }
 
+# exactly_once_fixed <file> <fixed-string> <label> — literal match, for markers
+exactly_once_fixed() {
+  local n
+  n="$(grep -Fc -e "$2" "$REPO/$1" 2>/dev/null || true)"
+  if [[ "$n" == "1" ]]; then pass "$3"; else fail "$3 (found $n, want 1)"; fi
+}
+
 # contains <file> <fixed-string> <label>
 # (-e guards fixed strings that start with a dash, e.g. "--model")
 contains() {
@@ -48,9 +55,9 @@ check_role_pack() {
   local role="$1" file="$2" key="$3"
   local model bb eb bytes_b bytes_o
 
-  exactly_once "$file" "<!-- gpt-baseline:${role}:begin -->" \
+  exactly_once_fixed "$file" "<!-- gpt-baseline:${role}:begin -->" \
     "$file: ${role} baseline begin marker exactly once"
-  exactly_once "$file" "<!-- gpt-baseline:${role}:end -->" \
+  exactly_once_fixed "$file" "<!-- gpt-baseline:${role}:end -->" \
     "$file: ${role} baseline end marker exactly once"
 
   model="$(model_for "$key")"
@@ -61,7 +68,7 @@ check_role_pack() {
 
   bb="<!-- gpt-overlay:${role}:${model}:begin -->"
   eb="<!-- gpt-overlay:${role}:${model}:end -->"
-  exactly_once "$file" "$bb" "$file: overlay for ${model} present"
+  exactly_once_fixed "$file" "$bb" "$file: overlay for ${model} present"
 
   bytes_b="$(extract "$file" "<!-- gpt-baseline:${role}:begin -->" \
     "<!-- gpt-baseline:${role}:end -->" | wc -c | tr -d ' ')"
