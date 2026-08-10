@@ -116,6 +116,12 @@ check_review_command() {
     "adversarial-review: owns missing-variant TODO side effect"
 }
 
+check_second_opinion() {
+  check_role_pack second-opinion commands/gpt-brainstorm.md second_opinion
+  contains commands/gpt-brainstorm.md '--model' \
+    "gpt-brainstorm: documents --model option"
+}
+
 check_claude_md() {
   exactly_once CLAUDE.md '^gpt_brainstorm_model:' \
     "CLAUDE.md: gpt_brainstorm_model exactly once"
@@ -136,6 +142,7 @@ main() {
   check_ideation
   check_review_agent
   check_review_command
+  check_second_opinion
   exit "$FAIL"
 }
 
