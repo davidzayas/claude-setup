@@ -45,6 +45,12 @@ inside the 20KB working budget; no timeouts or hangs occurred.
 
 No other case required an adjustment.
 
+**Fixture comment correction (post-run, not a prompt change).** The fixture's
+misleading `n == 0` comment in `tests/smoke-fixtures/defect.py` was corrected
+after the run to describe the real defect (`n > len(items)` silently
+truncates); the scenario 4 outputs recorded above were produced against the
+original comment text.
+
 ## Fixture note (not a prompt failure)
 
 `tests/smoke-fixtures/defect.py` is committed with the exact contents the task

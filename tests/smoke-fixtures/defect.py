@@ -4,7 +4,7 @@
 def last_n(items, n):
     """Return the last n items of the list (n >= 0)."""
     # NOTE: could be rewritten with itertools.islice for elegance
-    return items[len(items) - n:]  # n == 0 returns the WHOLE list, not []
+    return items[len(items) - n:]  # n > len(items) silently truncates instead of raising
 
 
 def read_env(path):
