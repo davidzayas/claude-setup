@@ -25,17 +25,23 @@ with a strict role split: **GPT generates, Claude facilitates.**
   purpose of this skill. Offer superpowers:brainstorming as an explicit,
   user-chosen fallback instead.
 
-## Model Selection
+## Model Selection and Variant Routing
 
 Resolve the GPT model in this order (first match wins):
 
 1. A model named in the user's invocation ("brainstorm X with o3-pro")
-2. A `gpt_brainstorm_model:` line in the project's CLAUDE.md
+2. The `gpt_brainstorm_model:` line in CLAUDE.md
 3. The Codex CLI default from ~/.codex/config.toml (pass no model param)
 
-Pass the resolved model via the codex tool's model parameter. State which
-model you're using in your first message so the user can correct it. All
-codex calls in this skill use sandbox read-only.
+Then select the prompt variant by EXACT model-id match against the overlay
+blocks in this file. If an overlay exists for the resolved model, compose the
+briefing as baseline + overlay (baseline first). If not: WARN the user before
+dispatch ("no tuned variant for <model>; using the generic baseline"), send
+the baseline alone, and record the missing variant per the TODO.md rules in
+CLAUDE.md ("GPT model routing").
+
+State the resolved model and variant status in your first message so the
+user can correct it. All codex calls in this skill use sandbox read-only.
 
 ## Session Continuity (critical)
 
@@ -45,18 +51,19 @@ subsequent turn. GPT must remember in phase 5 what the user answered in
 phase 3. If the session is lost, summarize the full transcript so far and
 re-seed a new session before continuing.
 
-**But keep the session small, because the server hangs silently when one
-gets too big.** A session carrying roughly 30KB or more has been observed to
-stop responding entirely — no error, no progress, a ~30-minute timeout — and
-resending costs another 30 minutes and fails identically. Brainstorming
-accumulates slowly (short questions and answers), so the usual causes are
-the opening project context and any code excerpts pasted mid-session.
+**But keep the session small: target a ≤20KB working budget, and treat 30KB
+as a hard danger boundary — sessions near it have hung silently** (no error,
+no progress, a ~30-minute timeout; resending costs another 30 minutes and
+fails identically). Brainstorming accumulates slowly (short questions and
+answers), so the usual causes are the opening project context and any code
+excerpts pasted mid-session.
 
 - Send a *summary* of the project context in the opening call, not file
   dumps. Quote only the specific lines a codebase-reality check turns on.
-- If the thread does grow large, re-seed proactively using the same
-  mechanism above — summarize and start a fresh session — rather than
-  waiting for it to hang. Continuity comes from the summary, not from the
+- Maintain a compact decision ledger as you go: decisions made, constraints,
+  open questions, approved sections. Before the session approaches the 20KB
+  working budget, re-seed proactively — start a fresh session from the
+  ledger, not the full transcript. Continuity comes from the ledger, not the
   thread id.
 - A hang is not the same as GPT being unavailable. If a re-seeded, small
   session still hangs, that is a genuine outage: stop and tell the user, per
@@ -101,18 +108,31 @@ You MUST create a task for each of these items and complete them in order:
 
 ## The Ideator Briefing (send as the first codex call)
 
-> You are the lead ideator in a requirements brainstorm. A facilitator will
-> relay your questions to a human product/engineering leader one at a time
-> and return their answers. Your job across this session: (1) ask sharp
-> clarifying questions — one per turn, multiple-choice when possible —
-> covering purpose, constraints, success criteria, and the assumptions most
-> likely to be wrong; (2) when understanding is sufficient, propose 2-3
-> distinct approaches with trade-offs and a recommendation; (3) draft the
-> design section by section on request: architecture, components, data flow,
-> error handling, testing. Apply YAGNI ruthlessly. If the project spans
-> multiple independent subsystems, say so immediately and propose a
-> decomposition instead of refining details. Project context follows.
-> {project context} · The idea, verbatim: {idea}
+Compose the first codex prompt as: baseline (below), then the overlay for
+the resolved model if one exists, then nothing else. Fill `{project context}`
+with a compact summary (never file dumps) and `{idea}` with the user's idea
+verbatim.
+
+<!-- gpt-baseline:ideation:begin -->
+You are an independent requirements ideator for:
+
+Project context: {project context}
+Idea: {idea}
+
+Claude alone facilitates the discussion with the human and verifies approval. Your goal is an approved, implementation-ready design. Success requires the purpose, constraints, measurable success criteria, risky assumptions, selected approach, and every approved design section to be explicit.
+
+During clarification, return exactly ONE decision-focused question and nothing else. Prefer multiple-choice options when practical. Ask only questions whose answers could materially change the design, and never recap settled answers.
+
+Once remaining uncertainty would not materially change the design, stop questioning. Propose 2–3 genuinely distinct approaches, explain their trade-offs, and recommend one. Decompose the work only when the parts are independently useful and implementable.
+
+After Claude relays the selected approach, draft exactly one design section per response, in this order: architecture, components, data flow, error handling, testing. Stop after each section for Claude's verification; revise it until approved before advancing.
+
+Do not implement anything, assume human approval, or act as Claude's substitute.
+<!-- gpt-baseline:ideation:end -->
+
+<!-- gpt-overlay:ideation:gpt-5.6-sol:begin -->
+The baseline is authoritative; this overlay only tunes communication. Ask the highest-impact unresolved question first. Omit recaps and phase narration. Transition promptly once the answers are sufficient. Keep responses concise while preserving every required design section, boundary, output contract, and stop condition.
+<!-- gpt-overlay:ideation:gpt-5.6-sol:end -->
 
 ## Facilitation Rules
 

@@ -41,6 +41,52 @@ model_for() {
   grep -E "^gpt_${1}_model:" "$REPO/CLAUDE.md" | awk '{print $2}' | head -n1
 }
 
+# check_role_pack <role> <file> <config-key>
+# Verifies: baseline markers present exactly once, an overlay exists for the
+# configured default model, and composed baseline+overlay fits the byte cap.
+check_role_pack() {
+  local role="$1" file="$2" key="$3"
+  local model bb eb bytes_b bytes_o
+
+  exactly_once "$file" "<!-- gpt-baseline:${role}:begin -->" \
+    "$file: ${role} baseline begin marker exactly once"
+  exactly_once "$file" "<!-- gpt-baseline:${role}:end -->" \
+    "$file: ${role} baseline end marker exactly once"
+
+  model="$(model_for "$key")"
+  if [[ -z "$model" ]]; then
+    fail "$file: cannot resolve model for ${key}"
+    return
+  fi
+
+  bb="<!-- gpt-overlay:${role}:${model}:begin -->"
+  eb="<!-- gpt-overlay:${role}:${model}:end -->"
+  exactly_once "$file" "$bb" "$file: overlay for ${model} present"
+
+  bytes_b="$(extract "$file" "<!-- gpt-baseline:${role}:begin -->" \
+    "<!-- gpt-baseline:${role}:end -->" | wc -c | tr -d ' ')"
+  bytes_o="$(extract "$file" "$bb" "$eb" | wc -c | tr -d ' ')"
+
+  if [[ "$bytes_b" -eq 0 ]]; then
+    fail "$file: ${role} baseline body is empty"
+  fi
+  if (( bytes_b + bytes_o <= MAX_FIXED_PROMPT_BYTES )); then
+    pass "$file: ${role} baseline+overlay ${bytes_b}+${bytes_o} bytes within ${MAX_FIXED_PROMPT_BYTES}"
+  else
+    fail "$file: ${role} baseline+overlay ${bytes_b}+${bytes_o} bytes exceeds ${MAX_FIXED_PROMPT_BYTES}"
+  fi
+}
+
+check_ideation() {
+  check_role_pack ideation skills/gpt-brainstorming/SKILL.md brainstorm
+  contains skills/gpt-brainstorming/SKILL.md '20KB' \
+    "SKILL.md: states 20KB working budget"
+  contains skills/gpt-brainstorming/SKILL.md '30KB' \
+    "SKILL.md: states 30KB hard boundary"
+  contains skills/gpt-brainstorming/SKILL.md 'read-only' \
+    "SKILL.md: read-only codex rule present"
+}
+
 check_claude_md() {
   exactly_once CLAUDE.md '^gpt_brainstorm_model:' \
     "CLAUDE.md: gpt_brainstorm_model exactly once"
@@ -58,6 +104,7 @@ check_claude_md() {
 main() {
   echo "prompt-contract-test: $REPO"
   check_claude_md
+  check_ideation
   exit "$FAIL"
 }
 
