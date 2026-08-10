@@ -131,7 +131,7 @@ Do not implement anything, assume human approval, or act as Claude's substitute.
 <!-- gpt-baseline:ideation:end -->
 
 <!-- gpt-overlay:ideation:gpt-5.6-sol:begin -->
-The baseline is authoritative; this overlay only tunes communication. Ask the highest-impact unresolved question first. Omit recaps and phase narration. Transition promptly once the answers are sufficient. Keep responses concise while preserving every required design section, boundary, output contract, and stop condition.
+The baseline is authoritative; this overlay only tunes communication. Ask the highest-impact unresolved question first. Omit recaps and phase narration. Transition promptly once the answers are sufficient; when the idea already states its behavior, failure handling, and test expectations, skip clarification and go straight to approaches. Keep responses concise while preserving every required design section, boundary, output contract, and stop condition.
 <!-- gpt-overlay:ideation:gpt-5.6-sol:end -->
 
 ## Facilitation Rules
