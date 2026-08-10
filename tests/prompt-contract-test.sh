@@ -107,6 +107,15 @@ check_review_agent() {
     "codex-adversary: Reviewer disagreements heading present"
 }
 
+check_review_command() {
+  contains commands/adversarial-review.md '--model' \
+    "adversarial-review: documents --model option"
+  contains commands/adversarial-review.md 'do not auto-loop more than once' \
+    "adversarial-review: one-loop maximum preserved"
+  contains commands/adversarial-review.md 'TODO.md' \
+    "adversarial-review: owns missing-variant TODO side effect"
+}
+
 check_claude_md() {
   exactly_once CLAUDE.md '^gpt_brainstorm_model:' \
     "CLAUDE.md: gpt_brainstorm_model exactly once"
@@ -126,6 +135,7 @@ main() {
   check_claude_md
   check_ideation
   check_review_agent
+  check_review_command
   exit "$FAIL"
 }
 
