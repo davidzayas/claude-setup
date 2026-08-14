@@ -64,12 +64,25 @@ bug only in MCP calls while the interactive CLI works.
 
 ## Wiring the MCP server in Claude Code
 
-Two working shapes:
+Install the pinned CLI first (see Version pin above), then register the
+server at user scope — two working shapes, pick one:
 
-- Shell wrapper (key stays in `~/.zshrc`):
-  `claude mcp add codex -s user -- zsh -c 'source ~/.zshrc >/dev/null 2>&1; exec codex mcp-server'`
-- `${VAR}` expansion in the MCP `env` block — Claude Code resolves it from
-  its launch environment, keeping the key value out of `~/.claude.json`.
+```bash
+npm install -g @openai/codex@0.146.1
+
+# Shape 1 — shell wrapper: the key stays in ~/.zshrc and is resolved when
+# the server starts (requires the export above any interactive-guard early
+# return; verify with: zsh -c 'source ~/.zshrc; echo ${AZURE_OPENAI_API_KEY:0:8}')
+claude mcp add codex -s user -- zsh -c 'source ~/.zshrc >/dev/null 2>&1; exec codex mcp-server'
+
+# Shape 2 — ${VAR} expansion: Claude Code resolves it from its own launch
+# environment; the literal key value never enters ~/.claude.json (the
+# single quotes matter — the shell must not expand it at add time)
+claude mcp add codex -s user -e AZURE_OPENAI_API_KEY='${AZURE_OPENAI_API_KEY}' -- codex mcp-server
+```
+
+Then fully restart Claude Code and check `claude mcp get codex` — but read
+the gotchas below before trusting what it says.
 
 Two operational gotchas:
 
