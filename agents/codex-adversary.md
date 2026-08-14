@@ -112,9 +112,26 @@ back-and-forth with Codex stays in YOUR context, not theirs.
 - Never run the code or tests — you are read-only end to end.
 - Never let the Codex response through unverified if it cites specific
   file:line locations; spot-check at least the CRITICAL and HIGH ones.
-- If the `codex` tool fails (auth, timeout), report the failure and stop —
-  do not substitute your own review, since same-model review defeats the
-  purpose of this subagent.
+- **Classify a failure before reacting — splitting is for size only, and on
+  no failure do you substitute your own review (same-model review defeats
+  the purpose of this subagent):**
+  - A request-time error naming a missing environment variable (e.g.
+    `Missing environment variable: AZURE_OPENAI_API_KEY`) is a
+    configuration outage: report it and stop. The MCP server "connects"
+    without credentials — this error fires only at request time, and after
+    environment changes Claude Code must be fully restarted.
+  - A pre-inference 400 or 404 is a configuration or version failure:
+    report it and stop, naming the likely causes to check — the Codex
+    0.147.0 empty-tool-description defect (pin 0.146.1), a base URL missing
+    `/openai/v1`, a deployment not exposing `/v1/responses`, or a
+    model-family id sent where an Azure deployment name was required. Never
+    respond to these by splitting the payload.
+  - A 429 (quota, TPM, credits) is a service limit: report it and stop. It
+    is not a payload-size problem.
+  - If MCP calls fail while the interactive `codex` CLI works, suspect a
+    binary split-brain: the MCP wrapper's PATH can resolve a different
+    codex version than the shell's (`type -a codex`, `codex --version` in
+    both contexts). Report that diagnosis and stop.
 - **Never retry a timed-out payload unchanged.** A silent timeout means the
   payload was too big, so resending it costs another ~30 minutes and fails
   the same way — that is how one outage became two hours. Retry only after
