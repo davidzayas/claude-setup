@@ -164,10 +164,11 @@ check_todo() {
 check_alias_registry() {
   # Zero alias lines is valid; every present line must match the schema
   # exactly (see CLAUDE.md "GPT model routing"): one deployment, '=', one
-  # family, no spaces in either.
+  # family, no whitespace (spaces, tabs, etc.) in either.
   local bad dupes
   bad="$(grep -En '^gpt_model_alias:' "$REPO/CLAUDE.md" \
-    | grep -Ev '^[0-9]+:gpt_model_alias: [^ =]+=[^ =]+$' || true)"
+    | grep -Ev '^[0-9]+:gpt_model_alias: [^[:space:]=]+=[^[:space:]=]+$' \
+    || true)"
   if [[ -z "$bad" ]]; then
     pass "CLAUDE.md: all gpt_model_alias lines match the schema"
   else

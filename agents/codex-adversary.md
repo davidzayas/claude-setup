@@ -119,7 +119,9 @@ back-and-forth with Codex stays in YOUR context, not theirs.
     `Missing environment variable: AZURE_OPENAI_API_KEY`) is a
     configuration outage: report it and stop. The MCP server "connects"
     without credentials — this error fires only at request time, and after
-    environment changes Claude Code must be fully restarted.
+    environment changes Claude Code must be fully restarted. When reporting
+    it, name the variable, never the error message's raw text — a
+    misconfigured env_key puts the literal key value inside that message.
   - A pre-inference 400 or 404 is a configuration or version failure:
     report it and stop, naming the likely causes to check — the Codex
     0.147.0 empty-tool-description defect (pin 0.146.1), a base URL missing

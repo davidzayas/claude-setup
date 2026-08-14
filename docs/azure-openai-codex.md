@@ -81,8 +81,10 @@ Two operational gotchas:
 
 ## Verification playbook
 
-1. `echo $AZURE_OPENAI_API_KEY` in the launching shell;
-   `launchctl getenv AZURE_OPENAI_API_KEY` for GUI apps.
+1. `echo ${AZURE_OPENAI_API_KEY:0:8}` in the launching shell (truncated
+   on purpose — never print or paste the full key);
+   `launchctl getenv AZURE_OPENAI_API_KEY` for GUI apps (also truncate
+   before sharing its output).
 2. `codex --version` → 0.146.1, and `type -a codex` shows one binary (or
    all copies at the pinned version).
 3. In Codex: `/status` must show the Azure provider URL and your

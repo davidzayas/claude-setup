@@ -44,7 +44,10 @@ baseline alone, and record the missing variant — keyed by the overlay
 model — per the TODO.md rules in CLAUDE.md ("GPT model routing"). The
 resolved model is the dispatch model: it goes in the codex model parameter
 verbatim (under an Azure provider it is the deployment name), never the
-alias target.
+alias target. If resolution falls through to the CLI default (no model
+param passed), say so explicitly instead of naming a dispatch model, use
+the generic baseline, and skip overlay derivation and TODO recording, per
+CLAUDE.md's fallback rule.
 
 State the dispatch model, the overlay model when it differs, and the variant status in your first message so the user can correct them.
 All codex calls in this skill use sandbox read-only.
