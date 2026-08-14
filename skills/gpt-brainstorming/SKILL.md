@@ -33,15 +33,21 @@ Resolve the GPT model in this order (first match wins):
 2. The `gpt_brainstorm_model:` line in CLAUDE.md
 3. The Codex CLI default from ~/.codex/config.toml (pass no model param)
 
-Then select the prompt variant by EXACT model-id match against the overlay
-blocks in this file. If an overlay exists for the resolved model, compose the
-briefing as baseline + overlay (baseline first). If not: WARN the user before
-dispatch ("no tuned variant for <model>; using the generic baseline"), send
-the baseline alone, and record the missing variant per the TODO.md rules in
-CLAUDE.md ("GPT model routing").
+Then derive the overlay model: apply the `gpt_model_alias:` registry in
+CLAUDE.md ("GPT model routing") to the resolved model — exact, single-hop;
+no match means the overlay model is the resolved model itself. Select the
+prompt variant by EXACT match of the overlay model against the overlay
+blocks in this file. If an overlay exists, compose the briefing as baseline
++ overlay (baseline first). If not: WARN the user before dispatch ("no
+tuned variant for <overlay model>; using the generic baseline"), send the
+baseline alone, and record the missing variant — keyed by the overlay
+model — per the TODO.md rules in CLAUDE.md ("GPT model routing"). The
+resolved model is the dispatch model: it goes in the codex model parameter
+verbatim (under an Azure provider it is the deployment name), never the
+alias target.
 
-State the resolved model and variant status in your first message so the
-user can correct it. All codex calls in this skill use sandbox read-only.
+State the dispatch model, the overlay model when it differs, and the variant status in your first message so the user can correct them.
+All codex calls in this skill use sandbox read-only.
 
 ## Session Continuity (critical)
 
@@ -70,6 +76,18 @@ excerpts pasted mid-session.
 - A hang is not the same as GPT being unavailable. If a re-seeded, small
   session still hangs, that is a genuine outage: stop and tell the user, per
   the role contract above.
+
+Classify failures before reacting. A request-time error naming a missing
+environment variable (e.g. `Missing environment variable:
+AZURE_OPENAI_API_KEY`), a pre-inference 400/404 (base URL missing
+`/openai/v1`, a deployment not exposing `/v1/responses`, the Codex 0.147.0
+empty-tool-description defect, or a family id sent where a deployment name
+was required), or a 429 quota/TPM error is a configuration or service
+failure: stop and tell the user the specific cause — do not re-seed,
+shrink, or retry. Re-seeding and payload discipline apply to silent hangs
+only. MCP "Connected" status proves the handshake, not credentials, and
+MCP servers inherit their environment from session start — after any
+environment change, Claude Code must be fully restarted.
 
 <HARD-GATE>
 Do NOT invoke any implementation skill, write any code, scaffold any project,

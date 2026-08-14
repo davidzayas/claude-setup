@@ -9,12 +9,16 @@ rest is the subject. If the subject is a file path, read the file and treat
 its contents as the subject. Reject an empty or repeated --model value: show
 the accepted syntax and stop rather than guessing.)
 
-Model routing: use the `--model` value if given, else
-`gpt_second_opinion_model:` from CLAUDE.md, else the Codex CLI default. If no
-overlay below matches the resolved model exactly, warn the user ("no tuned
-variant for <model>; using the generic baseline"), use the baseline alone,
-and record the missing variant (role=second-opinion) in the claude-setup
-repo's TODO.md per the "GPT model routing" rules in CLAUDE.md.
+Model routing: the dispatch model is the `--model` value if given, else
+`gpt_second_opinion_model:` from CLAUDE.md, else the Codex CLI default —
+under an Azure provider these are deployment names, and the dispatch model
+is what the codex model parameter receives verbatim. Derive the overlay
+model via the `gpt_model_alias:` registry in CLAUDE.md (exact, single-hop;
+no match = the dispatch model). If no overlay below matches the overlay
+model exactly, warn the user ("no tuned variant for <overlay model>; using
+the generic baseline"), use the baseline alone, and record the missing
+variant (role=second-opinion, keyed by the overlay model) in the
+claude-setup repo's TODO.md per the "GPT model routing" rules in CLAUDE.md.
 
 Protocol — keep the two perspectives genuinely independent:
 
