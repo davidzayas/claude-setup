@@ -26,7 +26,7 @@ Protocol — keep the two perspectives genuinely independent:
    do NOT show it to the user yet and do NOT include it in the prompt to
    Codex (no anchoring).
 2. **Get GPT's independent take.** Call `mcp__codex__codex` with sandbox
-   read-only and the resolved model. The prompt is the baseline below (plus
+   read-only and the dispatch model. The prompt is the baseline below (plus
    the matching overlay), with `{topic}` filled with the raw inputs you
    received — nothing more. Summarize any large referenced document instead
    of dumping it, and wrap the topic content in an explicitly labeled fenced

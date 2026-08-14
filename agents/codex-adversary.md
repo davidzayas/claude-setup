@@ -22,15 +22,15 @@ modify files.
      task context you were given). A reviewer without intent context produces
      generic feedback.
 
-2. **Dispatch to Codex.** Your caller passes the resolved model and its
-   variant status (tuned overlay or generic baseline) — model resolution and
-   TODO side effects are the caller's job, not yours. Call the `codex` MCP
-   tool with:
+2. **Dispatch to Codex.** Your caller passes the dispatch model, the overlay
+   model, and the variant status (tuned overlay or generic baseline) — model
+   resolution and TODO side effects are the caller's job, not yours. Call
+   the `codex` MCP tool with:
    - sandbox set to **read-only** (the reviewer must never write)
-   - the model you were given, via the model parameter
+   - the dispatch model you were given, via the model parameter
    - a prompt composed from the baseline below plus the overlay matching the
-     resolved model if one exists in this file (baseline first; exact
-     model-id match only)
+     overlay model your caller passed, if one exists in this file (baseline
+     first; exact match only)
    - the diff/files and context you assembled
 
    **Size discipline — the server hangs silently on large payloads.** Measure

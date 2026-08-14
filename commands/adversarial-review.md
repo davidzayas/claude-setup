@@ -24,14 +24,14 @@ Instructions for this run:
    record the missing variant — keyed by the overlay model — in the
    claude-setup repo's TODO.md per the "GPT model routing" rules in
    CLAUDE.md; you own this side effect; the subagent is read-only and must
-   never write it. Pass the dispatch model to the subagent for the wire
-   call.
+   never write it. Pass both models to the subagent: the dispatch model
+   for the wire call, the overlay model for prompt composition.
 2. Write a one-paragraph statement of intent for the code under review —
    what it is supposed to do and any constraints from the current task. Do
    not skip this; the reviewer needs intent to catch spec violations.
-3. Delegate to codex-adversary, passing the intent, the resolved model, and
-   its variant status (tuned overlay or generic baseline). Wait for its
-   structured report.
+3. Delegate to codex-adversary, passing the intent, the dispatch model, the
+   overlay model, and its variant status (tuned overlay or generic
+   baseline). Wait for its structured report.
 4. Adjudicate the findings yourself:
    - Fix everything you agree with at CRITICAL/HIGH.
    - For findings you disagree with, state the rebuttal explicitly in your

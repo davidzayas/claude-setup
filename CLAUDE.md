@@ -53,15 +53,19 @@ side, the right side becomes the overlay model; otherwise overlay model =
 dispatch model. Never chain aliases, never guess a family for an unlisted
 deployment, and never send an alias target to Codex as the model. Two alias
 lines with the same left side are a configuration error: stop the GPT
-dispatch and report it rather than picking one.
+dispatch and report it rather than picking one. A line starting with
+`gpt_model_alias:` that does not match the format exactly is likewise a
+configuration error: stop and report it rather than treating the
+deployment as unlisted.
 
 Each GPT-facing role file owns a generic baseline prompt plus per-model
 overlays, delimited by `gpt-baseline`/`gpt-overlay` HTML-comment markers.
 Select an overlay by EXACT match against the overlay model (alias-resolved
-as above) — never guess from a similar name. If no overlay exists for the resolved model: warn the user before
-dispatch, use the generic baseline alone, and record the missing variant —
-keyed by the overlay model, so one family maps to one entry regardless of
-deployment naming — in the claude-setup repo's TODO.md as
+as above) — never guess from a similar name. If no overlay exists for the
+overlay model: warn the user before dispatch, use the generic baseline
+alone, and record the missing variant — keyed by the overlay model, so one
+family maps to one entry regardless of deployment naming — in the
+claude-setup repo's TODO.md as
 `- [ ] prompt-variant: role=<role> model=<exact-model-id>` (one entry per
 role/model pair; skip if already present). Re-read TODO.md immediately
 before appending, so concurrent sessions do not write duplicates.
