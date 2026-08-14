@@ -92,7 +92,11 @@ model is used only for overlay selection and missing-variant TODO identity,
 and is derived through the alias registry below: zero or more lines, one
 per deployment, format exactly
 
-gpt_model_alias: <deployment>=<family>
+`gpt_model_alias: <deployment>=<family>`
+
+(The backticks on that format line matter: the contract test counts every
+line starting with `gpt_model_alias:` as a live entry, same convention as
+TODO.md's backticked schema line.)
 
 Lookup is exact and single-hop: if the dispatch model equals a line's left
 side, the right side becomes the overlay model; otherwise overlay model =
