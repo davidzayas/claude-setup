@@ -27,3 +27,4 @@ role/model pair:
 - [ ] unpin codex from 0.146.1 once the empty-tool-description regression
       (openai/codex #37380/#37487/#37675) is fixed upstream and a newer
       release passes the verification playbook in docs/azure-openai-codex.md
+- [ ] test-hardening: contract guard that agents/codex-adversary.md mentions "overlay model" (guards the caller/agent seam the 2026-08-14 final review caught)
