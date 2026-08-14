@@ -161,6 +161,28 @@ check_todo() {
   fi
 }
 
+check_alias_registry() {
+  # Zero alias lines is valid; every present line must match the schema
+  # exactly (see CLAUDE.md "GPT model routing"): one deployment, '=', one
+  # family, no spaces in either.
+  local bad dupes
+  bad="$(grep -En '^gpt_model_alias:' "$REPO/CLAUDE.md" \
+    | grep -Ev '^[0-9]+:gpt_model_alias: [^ =]+=[^ =]+$' || true)"
+  if [[ -z "$bad" ]]; then
+    pass "CLAUDE.md: all gpt_model_alias lines match the schema"
+  else
+    fail "CLAUDE.md: malformed gpt_model_alias lines: $bad"
+  fi
+
+  dupes="$(grep -E '^gpt_model_alias:' "$REPO/CLAUDE.md" \
+    | awk -F'[ =]' '{print $2}' | sort | uniq -d)"
+  if [[ -z "$dupes" ]]; then
+    pass "CLAUDE.md: no conflicting alias left sides"
+  else
+    fail "CLAUDE.md: conflicting aliases for: $dupes"
+  fi
+}
+
 check_claude_md() {
   exactly_once CLAUDE.md '^gpt_brainstorm_model:' \
     "CLAUDE.md: gpt_brainstorm_model exactly once"
@@ -178,6 +200,7 @@ check_claude_md() {
 main() {
   echo "prompt-contract-test: $REPO"
   check_claude_md
+  check_alias_registry
   check_ideation
   check_review_agent
   check_review_command
