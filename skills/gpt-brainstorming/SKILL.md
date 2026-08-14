@@ -129,7 +129,7 @@ You MUST create a task for each of these items and complete them in order:
 ## The Ideator Briefing (send as the first codex call)
 
 Compose the first codex prompt as: baseline (below), then the overlay for
-the resolved model if one exists, then nothing else. Fill `{project context}`
+the overlay model if one exists, then nothing else. Fill `{project context}`
 with a compact summary (never file dumps) and `{idea}` with the user's idea
 verbatim.
 
