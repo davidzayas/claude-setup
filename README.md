@@ -55,11 +55,22 @@ conflicts rather than claiming success.
 | `managed-files.sh` | The one list of managed paths both scripts source. |
 | `uninstall.sh` | Removes the symlinks and restores the backups; conservative to a fault. See Install. |
 | `tests/uninstall-test.sh` | Self-contained regression suite for both scripts (runs in a throwaway tmpdir). |
+| `docs/azure-openai-codex.md` | Azure OpenAI runbook: Codex config, version pin, env delivery, verification. |
 
 ## Requirements
 
-The **codex MCP server** must be configured, and GPT credits available. Both
-stage 1 and stage 3 depend on it. The policy deliberately says to *stop and
+The **codex MCP server** must be configured against exactly one provider —
+both stage 1 and stage 3 depend on it:
+
+- **OpenAI-hosted:** GPT credits on the account Codex uses; works as-is.
+- **Azure-hosted:** an Azure OpenAI deployment exposing the v1 Responses
+  API, set up per [docs/azure-openai-codex.md](docs/azure-openai-codex.md).
+  **Pin Codex CLI to 0.146.1** — 0.147.0 fails every Azure request before
+  inference (upstream openai/codex #37380/#37487/#37675). Under Azure,
+  model values are *deployment names*; the `gpt_model_alias:` registry in
+  CLAUDE.md maps them to prompt-overlay families.
+
+The policy deliberately says to *stop and
 tell the user* if it's unavailable rather than quietly substituting Claude —
 a Claude review of Claude's code is not a second opinion, and silently
 downgrading to one is worse than having no review, because you still believe
