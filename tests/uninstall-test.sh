@@ -304,6 +304,78 @@ before=$(snapshot "$FHOME")
 check "second run exits nonzero" test_fails uninstall_f
 check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
 
+# ---- install preflight ---------------------------------------------------------
+
+echo "preflight: all prerequisites pass, install proceeds, honest wording"
+fixture pf-pass; shim_dir pf-pass; shim_claude 0; shim_codex
+out="$(preflight_install 2>&1)" || bad "pf-pass exited nonzero"
+check "links created" test -L "$FHOME/CLAUDE.md"
+check "credentials-untested wording" grep -q "live credentials not tested" <<<"$out"
+
+echo "preflight: both binaries missing — both reported, nothing changed"
+fixture pf-none; shim_dir pf-none
+before=$(snapshot "$FHOME")
+out="$(preflight_install 2>&1)" && bad "pf-none should have failed" || ok "exits nonzero"
+check "reports claude missing" grep -q "claude CLI not found" <<<"$out"
+check "reports codex missing" grep -q "codex CLI not found" <<<"$out"
+check "established voice" grep -q "Nothing changed — required dependencies" <<<"$out"
+check "mentions SKIP_CHECKS" grep -q "SKIP_CHECKS=1" <<<"$out"
+check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
+
+echo "preflight: claude missing — MCP check skipped, not a second failure"
+fixture pf-noclaude; shim_dir pf-noclaude; shim_codex
+out="$(preflight_install 2>&1)" && bad "pf-noclaude should have failed" || ok "exits nonzero"
+check "reports claude missing" grep -q "claude CLI not found" <<<"$out"
+check "MCP reported as skipped" grep -q "skip     codex MCP registration" <<<"$out"
+check "MCP not a failure" test_fails grep -q "could not be verified" <<<"$out"
+
+echo "preflight: codex missing — remediation names the pinned install"
+fixture pf-nocodex; shim_dir pf-nocodex; shim_claude 0
+out="$(preflight_install 2>&1)" && bad "pf-nocodex should have failed" || ok "exits nonzero"
+check "reports codex missing" grep -q "codex CLI not found" <<<"$out"
+check "names the pin" grep -q "@openai/codex@0.146.1" <<<"$out"
+
+echo "preflight: MCP lookup fails — 'could not be verified', nothing changed"
+fixture pf-nomcp; shim_dir pf-nomcp; shim_claude 1; shim_codex
+before=$(snapshot "$FHOME")
+out="$(preflight_install 2>&1)" && bad "pf-nomcp should have failed" || ok "exits nonzero"
+check "could-not-verify wording" grep -q "could not be verified" <<<"$out"
+check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
+
+echo "preflight: dry run with failures — advisory, preview shown, exit 0"
+fixture pf-dry; shim_dir pf-dry
+before=$(snapshot "$FHOME")
+out="$(preflight_install DRY_RUN=1 2>&1)" || bad "dry run should exit 0"
+check "advisory label" grep -q "advisory" <<<"$out"
+check "preview still shown" grep -q "link     CLAUDE.md" <<<"$out"
+check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
+
+echo "preflight: SKIP_CHECKS=1 — probes not invoked, install proceeds"
+fixture pf-skip; shim_dir pf-skip; shim_claude 0; shim_codex
+out="$(preflight_install SKIP_CHECKS=1 2>&1)" || bad "pf-skip exited nonzero"
+check "links created" test -L "$FHOME/CLAUDE.md"
+check "bypass notice printed" grep -q "preflight bypassed" <<<"$out"
+check "claude probe not invoked" test_fails test -f "$SHIMBIN/claude.called"
+check "codex probe not invoked" test_fails test -f "$SHIMBIN/codex.called"
+
+echo "preflight: invalid flag values fail before anything"
+fixture pf-flags; shim_dir pf-flags; shim_claude 0; shim_codex
+before=$(snapshot "$FHOME")
+check "SKIP_CHECKS=2 rejected" test_fails preflight_install SKIP_CHECKS=2
+check "DRY_RUN=abc rejected" test_fails preflight_install DRY_RUN=abc
+check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
+
+echo "preflight: broken codex --version is a warning, not a gate"
+fixture pf-warn; shim_dir pf-warn; shim_claude 0
+cat > "$SHIMBIN/codex" <<'EOF'
+#!/bin/sh
+: >> "$0.called"
+exit 1
+EOF
+chmod +x "$SHIMBIN/codex"
+check "still installs" preflight_install
+check "links created" test -L "$FHOME/CLAUDE.md"
+
 # ---- summary -------------------------------------------------------------------
 
 echo
