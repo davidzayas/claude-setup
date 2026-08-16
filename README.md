@@ -9,6 +9,43 @@ the design is sound, and the model which writes the code is the worst judge of
 whether the code is correct. So the boundaries of the pipeline are model
 boundaries, not just phase boundaries.
 
+## Prerequisites — install these BEFORE running install.sh
+
+The pipeline drives GPT through the **Codex CLI** and its **MCP server**
+registered in Claude Code. Without them, stage 1 and stage 3 cannot run —
+so `install.sh` checks and refuses to link an unusable setup (bypass with
+`SKIP_CHECKS=1` if you deliberately want the config files first).
+
+1. **Claude Code** (`claude`) — verify: `claude --version`.
+2. **Codex CLI** — Azure users MUST pin the version (0.147.0 fails every
+   Azure request before inference):
+
+   ```bash
+   npm install -g @openai/codex@0.146.1
+   ```
+
+   Then point `~/.codex/config.toml` at exactly one provider —
+   OpenAI-hosted (sign-in or API key) or Azure-hosted (the TOML block in
+   [docs/azure-openai-codex.md](docs/azure-openai-codex.md)).
+3. **Codex MCP server** registered in Claude Code — pick one shape (both
+   detailed in the runbook):
+
+   ```bash
+   claude mcp add codex -s user -- zsh -c 'source ~/.zshrc >/dev/null 2>&1; exec codex mcp-server'
+   ```
+
+### Verify the chain
+
+| Level | Command | Proves |
+|---|---|---|
+| Binaries | `claude --version && codex --version` | Both CLIs present (Azure: 0.146.1) |
+| Registration | `claude mcp get codex` | MCP server registered — handshake only |
+| Credentials | one trivial codex call from a Claude Code session (fully restart it first) | The whole chain, end to end |
+
+`claude mcp get codex` saying "Connected" does **not** prove credentials —
+the key is only checked at request time. Environment delivery, restart
+gotchas, and troubleshooting: [docs/azure-openai-codex.md](docs/azure-openai-codex.md).
+
 ## Install
 
 ```bash
@@ -21,6 +58,10 @@ DRY_RUN=1 ./install.sh   # see what it would do
 It symlinks into `~/.claude`, backing up anything already there as
 `<name>.backup-<timestamp>`. Nothing is overwritten or deleted. Symlinks
 rather than copies, so editing either path edits the same file.
+
+install.sh first checks the prerequisites above and stops — before touching
+anything — if one is missing (`SKIP_CHECKS=1` bypasses; `DRY_RUN=1` reports
+the same checks advisorily).
 
 `settings.json` is **not** linked — see below.
 
@@ -59,16 +100,11 @@ conflicts rather than claiming success.
 
 ## Requirements
 
-The **codex MCP server** must be configured against exactly one provider —
-both stage 1 and stage 3 depend on it:
-
-- **OpenAI-hosted:** GPT credits on the account Codex uses; works as-is.
-- **Azure-hosted:** an Azure OpenAI deployment exposing the v1 Responses
-  API, set up per [docs/azure-openai-codex.md](docs/azure-openai-codex.md).
-  **Pin Codex CLI to 0.146.1** — 0.147.0 fails every Azure request before
-  inference (upstream openai/codex #37380/#37487/#37675). Under Azure,
-  model values are *deployment names*; the `gpt_model_alias:` registry in
-  CLAUDE.md maps them to prompt-overlay families.
+Everything in [Prerequisites](#prerequisites--install-these-before-running-installsh)
+above, working — that section is the single source for install commands and
+verification. Azure specifics (the 0.146.1 pin, deployment-name model
+values, the `gpt_model_alias:` registry) live in
+[docs/azure-openai-codex.md](docs/azure-openai-codex.md).
 
 The policy deliberately says to *stop and
 tell the user* if it's unavailable rather than quietly substituting Claude —
@@ -77,7 +113,7 @@ downgrading to one is worse than having no review, because you still believe
 you got one.
 
 The `superpowers` plugin provides the planning, TDD, and subagent-driven
-development skills the policy leans on. It's listed in `settings.json`.
+development skills the policy leans on. It's listed in `settings.json`. The installer's preflight does not check plugins — verify superpowers appears after merging settings.json and restarting.
 
 ## Two things to read before adopting this
 
