@@ -61,7 +61,10 @@ fixture() {
   done
 }
 
-install_f()   { CLAUDE_HOME="$FHOME" bash "$FREPO/install.sh" "$@"; }
+# SKIP_CHECKS: these fixtures test linking/backup mechanics, not the
+# dependency preflight (which has its own shim-based cases below), and must
+# not depend on what's installed on the developer machine.
+install_f()   { CLAUDE_HOME="$FHOME" SKIP_CHECKS=1 bash "$FREPO/install.sh" "$@"; }
 uninstall_f() { CLAUDE_HOME="$FHOME" bash "$FREPO/uninstall.sh" "$@"; }
 
 # snapshot <dir> — one line per entry (path, type, target/checksum), so two
@@ -73,6 +76,50 @@ snapshot() {
     else                     echo "$p dir"
     fi
   done)
+}
+
+# ---- preflight shims -----------------------------------------------------------
+# Preflight cases run install.sh under a sanitized PATH containing only a
+# per-fixture bin dir plus /usr/bin:/bin, so the developer machine's real
+# claude/codex are never consulted. Each shim drops a "<name>.called"
+# marker beside itself so tests can assert whether a probe ran.
+
+shim_dir() { SHIMBIN="$TMP/$1/bin"; mkdir -p "$SHIMBIN"; }
+
+# shim_claude <mcp-get-exit-code> — answers `mcp get codex` with the given
+# status; anything else exits 0.
+shim_claude() {
+  cat > "$SHIMBIN/claude" <<EOF
+#!/bin/sh
+: >> "\$0.called"
+if [ "\$1" = "mcp" ] && [ "\$2" = "get" ] && [ "\$3" = "codex" ]; then
+  exit $1
+fi
+exit 0
+EOF
+  chmod +x "$SHIMBIN/claude"
+}
+
+# shim_codex [version-line] — answers --version with the given line
+# (default "codex-cli 0.146.1"); anything else exits 0.
+shim_codex() {
+  cat > "$SHIMBIN/codex" <<EOF
+#!/bin/sh
+: >> "\$0.called"
+if [ "\$1" = "--version" ]; then
+  echo "${1:-codex-cli 0.146.1}"
+  exit 0
+fi
+exit 0
+EOF
+  chmod +x "$SHIMBIN/codex"
+}
+
+# preflight_install [VAR=val ...] — install.sh with sanitized PATH; extra
+# env pairs (DRY_RUN=1, SKIP_CHECKS=1, ...) go before the command.
+preflight_install() {
+  env PATH="$SHIMBIN:/usr/bin:/bin" CLAUDE_HOME="$FHOME" "$@" \
+    bash "$FREPO/install.sh"
 }
 
 # ---- installer regression ----------------------------------------------------
