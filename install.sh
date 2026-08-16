@@ -14,8 +14,8 @@ set -euo pipefail
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEST="${CLAUDE_HOME:-$HOME/.claude}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
-DRY_RUN="${DRY_RUN:-0}"
-SKIP_CHECKS="${SKIP_CHECKS:-0}"
+DRY_RUN="${DRY_RUN-0}"
+SKIP_CHECKS="${SKIP_CHECKS-0}"
 
 source "$REPO/managed-files.sh"
 

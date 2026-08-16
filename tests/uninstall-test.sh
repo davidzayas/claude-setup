@@ -257,6 +257,7 @@ fixture un-badflag
 install_f >/dev/null
 before=$(snapshot "$FHOME")
 check "exits nonzero" test_fails env DRY_RUN=yes CLAUDE_HOME="$FHOME" bash "$FREPO/uninstall.sh"
+check "empty DRY_RUN rejected" test_fails env DRY_RUN= CLAUDE_HOME="$FHOME" bash "$FREPO/uninstall.sh"
 check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
 
 # ---- uninstall: multiple backups -----------------------------------------------
@@ -364,6 +365,8 @@ before=$(snapshot "$FHOME")
 check "SKIP_CHECKS=2 rejected" test_fails preflight_install SKIP_CHECKS=2
 check "DRY_RUN=abc rejected" test_fails preflight_install DRY_RUN=abc
 check "whitespace-padded DRY_RUN rejected" test_fails preflight_install DRY_RUN=" 1"
+check "empty DRY_RUN rejected" test_fails preflight_install DRY_RUN=
+check "empty SKIP_CHECKS rejected" test_fails preflight_install SKIP_CHECKS=
 check "claude probe not invoked on bad flags" test_fails test -f "$SHIMBIN/claude.called"
 check "codex probe not invoked on bad flags" test_fails test -f "$SHIMBIN/codex.called"
 check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
