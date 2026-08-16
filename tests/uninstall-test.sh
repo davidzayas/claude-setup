@@ -363,6 +363,9 @@ fixture pf-flags; shim_dir pf-flags; shim_claude 0; shim_codex
 before=$(snapshot "$FHOME")
 check "SKIP_CHECKS=2 rejected" test_fails preflight_install SKIP_CHECKS=2
 check "DRY_RUN=abc rejected" test_fails preflight_install DRY_RUN=abc
+check "whitespace-padded DRY_RUN rejected" test_fails preflight_install DRY_RUN=" 1"
+check "claude probe not invoked on bad flags" test_fails test -f "$SHIMBIN/claude.called"
+check "codex probe not invoked on bad flags" test_fails test -f "$SHIMBIN/codex.called"
 check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
 
 echo "preflight: broken codex --version is a warning, not a gate"

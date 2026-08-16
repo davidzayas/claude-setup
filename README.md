@@ -107,7 +107,7 @@ values, the `gpt_model_alias:` registry) live in
 [docs/azure-openai-codex.md](docs/azure-openai-codex.md).
 
 The policy deliberately says to *stop and
-tell the user* if it's unavailable rather than quietly substituting Claude —
+tell the user* if the codex MCP server is unavailable rather than quietly substituting Claude —
 a Claude review of Claude's code is not a second opinion, and silently
 downgrading to one is worse than having no review, because you still believe
 you got one.

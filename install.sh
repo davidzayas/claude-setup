@@ -20,7 +20,7 @@ SKIP_CHECKS="${SKIP_CHECKS:-0}"
 source "$REPO/managed-files.sh"
 
 for flag in DRY_RUN SKIP_CHECKS; do
-  val="$(eval echo "\$$flag")"
+  val="${!flag}"
   if [[ "$val" != 0 && "$val" != 1 ]]; then
     echo "error: $flag must be 0 or 1 (got: $val)" >&2
     exit 1
