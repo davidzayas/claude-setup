@@ -101,13 +101,13 @@ EOF
 }
 
 # shim_codex [version-line] — answers --version with the given line
-# (default "codex-cli 0.146.1"); anything else exits 0.
+# (default "codex-cli 0.149.1"); anything else exits 0.
 shim_codex() {
   cat > "$SHIMBIN/codex" <<EOF
 #!/bin/sh
 : >> "\$0.called"
 if [ "\$1" = "--version" ]; then
-  echo "${1:-codex-cli 0.146.1}"
+  echo "${1:-codex-cli 0.149.1}"
   exit 0
 fi
 exit 0
@@ -334,7 +334,7 @@ echo "preflight: codex missing — remediation names the pinned install"
 fixture pf-nocodex; shim_dir pf-nocodex; shim_claude 0
 out="$(preflight_install 2>&1)" && bad "pf-nocodex should have failed" || ok "exits nonzero"
 check "reports codex missing" grep -q "codex CLI not found" <<<"$out"
-check "names the pin" grep -q "@openai/codex@0.146.1" <<<"$out"
+check "names the pin" grep -q "@openai/codex@0.149.1" <<<"$out"
 
 echo "preflight: MCP lookup fails — 'could not be verified', nothing changed"
 fixture pf-nomcp; shim_dir pf-nomcp; shim_claude 1; shim_codex

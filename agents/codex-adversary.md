@@ -124,7 +124,7 @@ back-and-forth with Codex stays in YOUR context, not theirs.
     misconfigured env_key puts the literal key value inside that message.
   - A pre-inference 400 or 404 is a configuration or version failure:
     report it and stop, naming the likely causes to check — the Codex
-    0.147.0 empty-tool-description defect (pin 0.146.1), a base URL missing
+    0.147.0–0.148.x empty-tool-description defect (use 0.149.1+), a base URL missing
     `/openai/v1`, a deployment not exposing `/v1/responses`, or a
     model-family id sent where an Azure deployment name was required. Never
     respond to these by splitting the payload.

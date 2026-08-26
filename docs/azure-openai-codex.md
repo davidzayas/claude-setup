@@ -34,20 +34,26 @@ Four rules, each learned the hard way:
   must expose `/v1/responses` (the `/openai/v1` base path, no
   `api-version` query needed).
 
-## Version pin — do not run 0.147.0 against Azure
+## Version guidance — Azure needs 0.149.1 or newer
 
-Codex CLI 0.147.0 wraps a built-in tool with an empty `description`, which
-Azure's Responses API schema rejects, so **every request fails before
-inference** with `Invalid 'input[0].tools[0].description'`. Pin 0.146.1
-(`npm install -g @openai/codex@0.146.1`) until the regression is fixed
-upstream (openai/codex #37380, #37487, #37675). TODO.md tracks the unpin.
+Codex CLI 0.147.0 wrapped a built-in tool with an empty `description`,
+which Azure's Responses API schema rejects, so on 0.147.0–0.148.x **every
+request fails before inference** with
+`Invalid 'input[0].tools[0].description'` (openai/codex #37380, #37487,
+#37675). **0.149.1 is verified working against Azure** (2026-08-26, both
+legs of the playbook below: CLI request and MCP call from Claude Code).
+Two cautions: the upstream issues were never formally closed and the fix
+may be partly Azure-side, so re-run the playbook after ANY codex upgrade;
+and 0.146.1 remains the known-good fallback if a future version regresses.
 
 Watch for the duplicate-binary trap: `npm install -g` and the native
 installer write to different places (e.g. `~/.local/bin/codex`), and the
 MCP wrapper resolves whatever its own PATH finds. Check with `type -a
 codex` and run `codex --version` from a shell AND confirm the version the
-MCP wrapper's PATH resolves — a stale 0.147.0 there reproduces the Azure
-bug only in MCP calls while the interactive CLI works.
+MCP wrapper's PATH resolves — a stale broken version there reproduces the
+Azure bug only in MCP calls while the interactive CLI works. MCP servers
+also keep the binary they launched with: fully restart Claude Code after
+upgrading, or the old version keeps serving MCP calls.
 
 ## Getting the key into the environment
 
@@ -68,7 +74,7 @@ Install the pinned CLI first (see Version pin above), then register the
 server at user scope — two working shapes, pick one:
 
 ```bash
-npm install -g @openai/codex@0.146.1
+npm install -g @openai/codex@0.149.1
 
 # Shape 1 — shell wrapper: the key stays in ~/.zshrc and is resolved when
 # the server starts (requires the export above any interactive-guard early
@@ -98,8 +104,8 @@ Two operational gotchas:
    on purpose — never print or paste the full key);
    `launchctl getenv AZURE_OPENAI_API_KEY` for GUI apps (also truncate
    before sharing its output).
-2. `codex --version` → 0.146.1, and `type -a codex` shows one binary (or
-   all copies at the pinned version).
+2. `codex --version` → 0.149.1 (or the version you've verified), and
+   `type -a codex` shows one binary (or all copies at that version).
 3. In Codex: `/status` must show the Azure provider URL and your
    deployment name.
 4. Negative test: `codex logout`, `unset OPENAI_API_KEY`, run a prompt — a
@@ -116,7 +122,7 @@ Two operational gotchas:
 | Signature | Meaning | Fix |
 |---|---|---|
 | `Missing environment variable: AZURE_OPENAI_API_KEY` | Key not in the environment the failing surface inherited | Export/launchctl per above; restart Claude Code |
-| `Invalid 'input[0].tools[0].description'` (400, pre-inference) | Codex 0.147.0 regression | Pin 0.146.1; check for duplicate binaries |
+| `Invalid 'input[0].tools[0].description'` (400, pre-inference) | Codex 0.147.0–0.148.x regression | Upgrade to 0.149.1+; check for duplicate binaries and restart Claude Code |
 | 404 on the model | Family id sent where a deployment name was needed, or wrong deployment | Fix the model value / alias registry |
 | 400 protocol/endpoint errors | Base URL missing `/openai/v1`, or deployment lacks `/v1/responses` | Fix base_url / deployment |
 | 429 | Quota / TPM / credits exhausted | Service limit — not a payload problem; check Azure quotas |

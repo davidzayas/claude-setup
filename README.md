@@ -17,11 +17,12 @@ so `install.sh` checks and refuses to link an unusable setup (bypass with
 `SKIP_CHECKS=1` if you deliberately want the config files first).
 
 1. **Claude Code** (`claude`) — verify: `claude --version`.
-2. **Codex CLI** — Azure users MUST pin the version (0.147.0 fails every
-   Azure request before inference):
+2. **Codex CLI** — Azure users MUST use a verified version: 0.147.0–0.148.x
+   fail every Azure request before inference; 0.149.1 is verified working
+   (2026-08-26; see the runbook's version guidance):
 
    ```bash
-   npm install -g @openai/codex@0.146.1
+   npm install -g @openai/codex@0.149.1
    ```
 
    Then point `~/.codex/config.toml` at exactly one provider —
@@ -38,7 +39,7 @@ so `install.sh` checks and refuses to link an unusable setup (bypass with
 
 | Level | Command | Proves |
 |---|---|---|
-| Binaries | `claude --version && codex --version` | Both CLIs present (Azure: 0.146.1) |
+| Binaries | `claude --version && codex --version` | Both CLIs present (Azure: 0.149.1+) |
 | Registration | `claude mcp get codex` | MCP server registered — handshake only |
 | Credentials | one trivial codex call from a Claude Code session (fully restart it first) | The whole chain, end to end |
 
@@ -102,7 +103,7 @@ conflicts rather than claiming success.
 
 Everything in [Prerequisites](#prerequisites--install-these-before-running-installsh)
 above, working — that section is the single source for install commands and
-verification. Azure specifics (the 0.146.1 pin, deployment-name model
+verification. Azure specifics (version guidance, deployment-name model
 values, the `gpt_model_alias:` registry) live in
 [docs/azure-openai-codex.md](docs/azure-openai-codex.md).
 
