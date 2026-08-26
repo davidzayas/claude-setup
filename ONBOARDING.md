@@ -15,11 +15,12 @@ unusable setup (bypass with `SKIP_CHECKS=1` if you deliberately want the
 config files first).
 
 1. **Claude Code** (`claude`) — verify: `claude --version`.
-2. **Codex CLI** — Azure users MUST pin the version (0.147.0 fails every
-   Azure request before inference):
+2. **Codex CLI** — Azure users MUST use a verified version: 0.147.0–0.148.x
+   fail every Azure request before inference; 0.149.1 is verified working
+   (2026-08-26; see the repo runbook's version guidance):
 
    ```bash
-   npm install -g @openai/codex@0.146.1
+   npm install -g @openai/codex@0.149.1
    ```
 
    Point `~/.codex/config.toml` at exactly one provider — OpenAI-hosted
@@ -37,7 +38,7 @@ config files first).
 
 | Level | Command | Proves |
 |---|---|---|
-| Binaries | `claude --version && codex --version` | Both CLIs present (Azure: 0.146.1) |
+| Binaries | `claude --version && codex --version` | Both CLIs present (Azure: 0.149.1+) |
 | Registration | `claude mcp get codex` | MCP server registered — handshake only |
 | Credentials | one trivial codex call from a Claude Code session (fully restart it first) | The whole chain, end to end |
 

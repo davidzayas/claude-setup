@@ -49,9 +49,9 @@ else
   if command -v codex >/dev/null 2>&1; then
     ver="$(codex --version 2>/dev/null || true)"
     echo "  found    codex (${ver:-version unknown})"
-    echo "  note     Azure providers require the 0.146.1 pin — see docs/azure-openai-codex.md"
+    echo "  note     Azure providers need 0.149.1+ (0.147.0–0.148.x are broken) — see docs/azure-openai-codex.md"
   else
-    missing+=("codex CLI not found in PATH — npm install -g @openai/codex@0.146.1")
+    missing+=("codex CLI not found in PATH — npm install -g @openai/codex@0.149.1")
   fi
 
   if [[ "$have_claude" == 1 ]]; then
