@@ -16,15 +16,15 @@ written before any call was made.
 
 | # | Role | Scenario | In/out bytes | Contract pass? | Notes |
 |---|------|----------|--------------|----------------|-------|
-| 1 | ideation | ambiguous feature | | | |
-| 2 | ideation | near-complete requirements | | | |
+| 1 | ideation | ambiguous feature | 1778 / 284 | yes | Exactly one question, nothing else: "What should drive the performance work: (A) measure representative CLI runs first and determine whether caching is justified (recommended), (B) prioritize a known slowdown in repeated local scans, or (C) prioritize a known slowdown in repeated remote metadata fetches?" Targets the slow operation (scans vs. remote fetches) before any TTL/eviction/storage choice. |
+| 2 | ideation | near-complete requirements | 2231 / 1401 | yes | No clarifying question; two distinct approaches given directly — "A — Bash built-in read and print" vs "B — External file reader with buffered output" (cat) — with trade-offs and a recommendation (A). Purpose, constraints, measurable test outcomes, and the risky assumption ("installation packaging actually includes the promised one-line VERSION file") are explicit; both approaches read VERSION at invocation time and preserve the missing-file stderr/exit-1 contract. |
 | 3 | second-opinion | JSON-vs-SQLite (two phases) | | | |
 | 4 | review | seeded defects | | | |
 | 5 | review | clean fixture | | | |
 
 ## Failures and adjustments
 
-(none yet)
+No failures; no overlay adjustments.
 
 ## Inputs
 
@@ -230,4 +230,18 @@ Defensive-programming suggestions outside the stated domain earn nothing.
 
 ## Raw outputs
 
-(filled in by the run; one subsection per case, assistant text verbatim)
+### Case 1 — ideation, ambiguous feature (session 01a08354-18cb-7572-bb97-1efafe6afdf9)
+
+What should drive the performance work: **(A)** measure representative CLI runs first and determine whether caching is justified **(recommended)**, **(B)** prioritize a known slowdown in repeated local scans, or **(C)** prioritize a known slowdown in repeated remote metadata fetches?
+
+### Case 2 — ideation, near-complete requirements (session 01a08354-ffc7-76b3-a233-290f34c0f879)
+
+**Approaches**
+- **A — Bash built-in read and print (recommended).** Recognize the sole `--version` argument, read the version line from the installation-root `VERSION` file into an invocation-local variable, then print it with exactly one newline. Requires no external utility or subprocess. The read must preserve whitespace and backslashes and handle a final line without a newline.
+- **B — External file reader with buffered output.** Recognize the same invocation, capture `VERSION` using `cat`, check its exit status, then print the captured line with one newline. Familiar and straightforward, but adds a subprocess and external utility dependency. Buffering keeps stdout empty when reading fails.
+
+**Common Contract**
+Both expose the installed version at invocation time, without network access or caching. A successful invocation prints only the version line plus one newline and exits `0`; a missing file produces only a stderr diagnostic and exits `1`. Every other argument combination follows the existing dispatcher unchanged.
+
+**Recommendation**
+Choose **A** for its minimal dependencies and narrow change surface. Tests should verify exact output bytes, stderr, exit status, and fresh reads after changing `VERSION`, while retaining existing argument-behavior tests. The key assumption to verify is that installation packaging actually includes the promised one-line `VERSION` file.
