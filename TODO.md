@@ -11,7 +11,7 @@ role/model pair:
 
 `- [ ] prompt-variant: role=<ideation|second-opinion|review> model=<exact-model-id>`
 
-(none yet)
+- [ ] prompt-variant: role=ideation model=gpt-6-astra
 
 ## Follow-ups from final branch review (2026-08-10)
 
