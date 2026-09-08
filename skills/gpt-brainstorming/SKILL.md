@@ -157,6 +157,10 @@ Do not implement anything, assume human approval, or act as Claude's substitute.
 The baseline is authoritative; this overlay only tunes communication. Ask the highest-impact unresolved question first. Omit recaps and phase narration. Transition promptly once the answers are sufficient; when the idea already states its behavior, failure handling, and test expectations, skip clarification and go straight to approaches. Keep responses concise while preserving every required design section, boundary, output contract, and stop condition.
 <!-- gpt-overlay:ideation:gpt-5.6-sol:end -->
 
+<!-- gpt-overlay:ideation:gpt-6-astra:begin -->
+The baseline is authoritative; this overlay only tunes communication. Make the highest-impact unresolved decision easy to answer, without recaps or process narration. When clarification is unnecessary, move directly to distinct approaches and concrete trade-offs. Prefer concise, decision-ready prose without omitting required content.
+<!-- gpt-overlay:ideation:gpt-6-astra:end -->
+
 ## Facilitation Rules
 
 - **One question at a time.** GPT may batch questions; you relay exactly one

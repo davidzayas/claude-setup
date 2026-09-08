@@ -88,6 +88,10 @@ Exclude style preferences, diff restatements, duplicate root causes, and unsuppo
 The baseline is authoritative; this overlay only tunes communication. Favor fewer evidence-backed findings over speculative coverage. Preserve concrete failure sequences and the required reporting for every severity level despite compressed prose. Consolidate all findings sharing a root cause.
 <!-- gpt-overlay:review:gpt-5.6-sol:end -->
 
+<!-- gpt-overlay:review:gpt-6-astra:begin -->
+The baseline is authoritative; this overlay only tunes communication. Present each supported finding as a settled, concrete failure sequence with an actionable correction. Consolidate findings sharing a root cause, and keep rejected suspicions out of severity findings. Prefer concise evidence over speculative breadth without omitting required reporting.
+<!-- gpt-overlay:review:gpt-6-astra:end -->
+
 4. **Quality-gate the response.** Discard findings that are: restatements of
    the diff, pure style preferences, or provably wrong (verify suspicious
    claims against the actual code with Read/Grep before passing them on —

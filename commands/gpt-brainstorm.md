@@ -69,3 +69,7 @@ Attack that position constructively. Return only substantive disagreements, miss
 <!-- gpt-overlay:second-opinion:gpt-5.6-sol:begin -->
 The baseline is authoritative; this overlay only tunes communication. Commit to a position before seeing Claude's. Keep the alternative genuinely distinct. During rebuttal, return only NEW material disagreements and their concrete consequences. Preserve all phase boundaries, contracts, and stop conditions.
 <!-- gpt-overlay:second-opinion:gpt-5.6-sol:end -->
+
+<!-- gpt-overlay:second-opinion:gpt-6-astra:begin -->
+The baseline is authoritative; this overlay only tunes communication. State the position directly and connect each material trade-off to its practical consequence. Make the alternative meaningfully distinct. In rebuttal, express each new material disagreement precisely without repeating earlier analysis.
+<!-- gpt-overlay:second-opinion:gpt-6-astra:end -->

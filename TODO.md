@@ -11,7 +11,7 @@ role/model pair:
 
 `- [ ] prompt-variant: role=<ideation|second-opinion|review> model=<exact-model-id>`
 
-- [ ] prompt-variant: role=ideation model=gpt-6-astra
+- [x] prompt-variant: role=ideation model=gpt-6-astra — done 2026-09-08: overlay added (this plan, Task 1)
 
 ## Follow-ups from final branch review (2026-08-10)
 
