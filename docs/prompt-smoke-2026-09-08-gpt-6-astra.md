@@ -16,8 +16,8 @@ written before any call was made.
 
 | # | Role | Scenario | In/out bytes | Contract pass? | Notes |
 |---|------|----------|--------------|----------------|-------|
-| 1 | ideation | ambiguous feature | 1982 / 264 | yes (after fix) | Rerun. Exactly one question, nothing else: "Which workflow should this effort optimize first? A. Repeated local project scans. B. Repeated remote metadata fetches. C. Installation or updates. D. Measure representative runs first, then choose the bottleneck to address—even if caching is not the right fix." One decision-focused question with a measure-first option; no recap, approaches, design content, implementation, or approval claim. |
-| 2 | ideation | near-complete requirements | 2435 / 944 | no | Rerun. Distinctness fixed — "1. Dispatcher-contained handling" (flag handled directly in the dispatcher) vs "2. Dedicated version handler" (dispatcher delegates to a separate handler) now matches the report's own "flag handled in the dispatcher vs a dedicated helper" calibration example. But the response drops other required-explicit content: no purpose statement, no measurable outcomes (only "verified through the existing shell-test framework"), and no risky assumption (nothing like the first attempt's VERSION-packaging assumption) — the Expected paragraph requires all of purpose/constraints/measurable-outcomes/risky-assumption "made explicit." Residual failure; see Fix round 1 notes. |
+| 1 | ideation | ambiguous feature | 2031 / 228 | yes (after fix) | Rerun 2 (round-2 overlay fix). Exactly one question, nothing else: "Should we (A) measure representative CLI runs first and pursue caching only if reusable work causes meaningful delays (recommended), or (B) treat caching as required and use measurements only to choose what to cache?" One decision-focused, multiple-choice question resolving whether/how to justify caching before designing it; no recap, approaches, design content, implementation, or approval claim. |
+| 2 | ideation | near-complete requirements | 2484 / 1772 | yes (after fix) | Rerun 2 (round-2 overlay fix). No clarifying question; goes straight to explicit **Purpose** ("Expose the installed `repo-tool` version through a predictable, script-friendly `repo-tool --version` invocation"), **Constraints** (4 bullets, incl. "No network access or cached version value"), **Measurable Success Criteria** (4 bullets: exact stdout bytes/newline, exit 0; missing-file stderr/empty-stdout/exit 1; version changes across invocations; tests pass), and a **Risky Assumption** ("Startup before dispatch does not emit output or terminate in a way that prevents the required version outcomes"). Two genuinely distinct architectural approaches — "Dispatcher-owned behavior" vs "Dedicated version handler" — with trade-offs and a recommendation (approach 1). Runtime `VERSION` read at invocation time and missing-file behavior both preserved. No implementation; ends "Neither approach nor any design section is approved yet." All previously-missing required-explicit content now present; see Fix round 2 notes. |
 | 3 | second-opinion | JSON-vs-SQLite (two phases) | | | |
 | 4 | review | seeded defects | | | |
 | 5 | review | clean fixture | | | |
@@ -61,6 +61,52 @@ the promised one-line VERSION file" has no analogue here). Per the brief,
 no second overlay change is made in this round; this is recorded as a
 residual `no` and reported as a concern.
 
+### Round 2
+
+Observed deviation, quoted verbatim from the round-1 rerun's case-2 output
+(recorded above): "**Recommendation:** Approach 1, verified through the
+existing shell-test framework. Both approaches support invocation-time
+reads, no network or cached value, and unchanged handling of every other
+argument combination. Internal organization does not require further
+product clarification." — no purpose statement, no measurable outcomes
+("verified through the existing shell-test framework" names a test
+framework, not a measurable criterion), and no risky assumption anywhere in
+the response.
+
+Smallest further communication-only change applied to the `gpt-6-astra`
+**ideation** overlay body in `skills/gpt-brainstorming/SKILL.md`: replaced
+the closing "Prefer concise, decision-ready prose without omitting required
+content." sentence — which had proven too vague to stop the model from
+dropping purpose/measurable-outcomes/risky-assumption under compression —
+with one that names the baseline's own required categories directly:
+"State the purpose, constraints, measurable success criteria, and a risky
+assumption explicitly alongside the approaches — compression trims prose,
+not these required categories." The round-1 architectural-distinctness
+clause was also tightened ("rather than a choice of which primitive or
+utility performs an otherwise identical step" → "not which primitive or
+utility performs an identical step") to keep the overlay a short paragraph
+comparable to the `gpt-5.6-sol` one (588 vs 458 bytes with markers/newline,
+587 vs 458 bytes body-only). This adds no new obligation beyond the
+baseline's own "purpose, constraints, measurable success criteria, risky
+assumptions ... explicit" requirement, and does not touch markers, the
+baseline block, or the `gpt-5.6-sol` overlay.
+
+Both case 1 and case 2 were rerun as fresh `mcp__codex__codex` sessions
+after this second overlay change (case-1 and case-2 composed prompts
+updated in "## Inputs" to match the new overlay body). The round-2 rerun
+results are the results of record in the table above; the round-1 rerun's
+raw outputs are kept below under "— rerun 1 after overlay fix" sub-headings
+for the record.
+
+Result: case 1 continues to pass (single decision-focused multiple-choice
+question, nothing else). Case 2 now passes cleanly — purpose, constraints,
+measurable success criteria, and a risky assumption are each stated
+explicitly, the two approaches remain architecturally distinct
+("Dispatcher-owned behavior" vs "Dedicated version handler"), runtime
+`VERSION` reading and missing-file behavior are preserved, and no
+implementation or assumed approval appears. No further overlay change was
+needed.
+
 ## Inputs
 
 ### Case 1 — ideation, ambiguous feature
@@ -83,7 +129,7 @@ After Claude relays the selected approach, draft exactly one design section per 
 
 Do not implement anything, assume human approval, or act as Claude's substitute.
 
-The baseline is authoritative; this overlay only tunes communication. Make the highest-impact unresolved decision easy to answer, without recaps or process narration. When clarification is unnecessary, move directly to distinct approaches and concrete trade-offs, keeping each alternative's distinction architectural — where responsibility lives, how the work is organized — rather than a choice of which primitive or utility performs an otherwise identical step. Prefer concise, decision-ready prose without omitting required content.
+The baseline is authoritative; this overlay only tunes communication. Make the highest-impact unresolved decision easy to answer, without recaps or process narration. When clarification is unnecessary, move directly to distinct approaches and concrete trade-offs, keeping each alternative's distinction architectural — where responsibility lives, not which primitive or utility performs an identical step. State the purpose, constraints, measurable success criteria, and a risky assumption explicitly alongside the approaches — compression trims prose, not these required categories.
 ```
 
 Expected: exactly one decision-focused question and nothing else — no recap,
@@ -281,7 +327,7 @@ Both expose the installed version at invocation time, without network access or 
 **Recommendation**
 Choose **A** for its minimal dependencies and narrow change surface. Tests should verify exact output bytes, stderr, exit status, and fresh reads after changing `VERSION`, while retaining existing argument-behavior tests. The key assumption to verify is that installation packaging actually includes the promised one-line `VERSION` file.
 
-### Case 1 — ideation, ambiguous feature — rerun after overlay fix (session 01a0835d-96e9-7a73-8485-df6ed20b3eb8)
+### Case 1 — ideation, ambiguous feature — rerun 1 after overlay fix (session 01a0835d-96e9-7a73-8485-df6ed20b3eb8)
 
 Which workflow should this effort optimize first?
 
@@ -290,10 +336,40 @@ B. Repeated remote metadata fetches.
 C. Installation or updates.
 D. Measure representative runs first, then choose the bottleneck to address—even if caching is not the right fix.
 
-### Case 2 — ideation, near-complete requirements — rerun after overlay fix (session 01a0835e-a87e-79b2-8bc6-4692fe262bb5)
+### Case 2 — ideation, near-complete requirements — rerun 1 after overlay fix (session 01a0835e-a87e-79b2-8bc6-4692fe262bb5)
 
 1. **Dispatcher-contained handling — recommended.** Add a narrowly guarded branch for exactly one argument, `--version`. The dispatcher owns reading the root `VERSION` file, output, and exit status. This keeps the change small and avoids new interfaces; the trade-off is adding a little I/O responsibility to argument dispatch.
 
 2. **Dedicated version handler.** The dispatcher recognizes the sole-argument invocation and delegates to a handler that receives the installation root and owns reading, output, and status. This separates routing from behavior and allows focused handler tests, but introduces an interface for a small, single-use operation.
 
 **Recommendation:** Approach 1, verified through the existing shell-test framework. Both approaches support invocation-time reads, no network or cached value, and unchanged handling of every other argument combination. Internal organization does not require further product clarification.
+
+### Case 1 — ideation, ambiguous feature — rerun 2 after overlay fix (session 01a08367-5a7e-76f0-8e6f-3a7068bfea9c)
+
+Should we **(A)** measure representative CLI runs first and pursue caching only if reusable work causes meaningful delays **(recommended)**, or **(B)** treat caching as required and use measurements only to choose what to cache?
+
+### Case 2 — ideation, near-complete requirements — rerun 2 after overlay fix (session 01a08368-032e-70f1-9162-2f25d3ba39ef)
+
+**Purpose**
+Expose the installed `repo-tool` version through a predictable, script-friendly `repo-tool --version` invocation.
+
+**Constraints**
+- Recognize `--version` only when it is the sole argument.
+- Read `VERSION` from the installation root already available to the dispatcher, at invocation time.
+- Use no network access or cached version value.
+- Preserve all other CLI behavior and existing argument-behavior tests.
+
+**Measurable Success Criteria**
+- With `VERSION` present, stdout contains exactly its version line followed by one newline; exit status is `0`.
+- With `VERSION` missing, stdout is empty, stderr contains a diagnostic identifying the missing file, and exit status is `1`.
+- Changing `VERSION` between invocations changes the reported version.
+- New outcome tests and all retained argument-behavior tests pass.
+
+**Risky Assumption**
+Startup before dispatch does not emit output or terminate in a way that prevents the required version outcomes. Verify this integration point rather than assuming the new branch alone guarantees them.
+
+**Approaches**
+1. **Dispatcher-owned behavior — recommended.** The dispatcher recognizes the sole-argument invocation and owns reading, output, and status handling. This keeps the change localized and avoids another execution boundary, at the cost of adding file-reading responsibility to dispatch.
+2. **Dedicated version handler.** The dispatcher recognizes the invocation and delegates reading, output, and status to a handler supplied with the installation root. This separates routing from execution and supports isolated testing, but introduces an additional interface for a small, single-use operation.
+
+Recommend **approach 1** for the narrow scope. Neither approach nor any design section is approved yet.

@@ -158,7 +158,7 @@ The baseline is authoritative; this overlay only tunes communication. Ask the hi
 <!-- gpt-overlay:ideation:gpt-5.6-sol:end -->
 
 <!-- gpt-overlay:ideation:gpt-6-astra:begin -->
-The baseline is authoritative; this overlay only tunes communication. Make the highest-impact unresolved decision easy to answer, without recaps or process narration. When clarification is unnecessary, move directly to distinct approaches and concrete trade-offs, keeping each alternative's distinction architectural — where responsibility lives, how the work is organized — rather than a choice of which primitive or utility performs an otherwise identical step. Prefer concise, decision-ready prose without omitting required content.
+The baseline is authoritative; this overlay only tunes communication. Make the highest-impact unresolved decision easy to answer, without recaps or process narration. When clarification is unnecessary, move directly to distinct approaches and concrete trade-offs, keeping each alternative's distinction architectural — where responsibility lives, not which primitive or utility performs an identical step. State the purpose, constraints, measurable success criteria, and a risky assumption explicitly alongside the approaches — compression trims prose, not these required categories.
 <!-- gpt-overlay:ideation:gpt-6-astra:end -->
 
 ## Facilitation Rules
