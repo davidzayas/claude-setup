@@ -964,15 +964,15 @@ L1: 3280 + 256 + 4,608 = 8144. L2: 4138 + 667 + 10,240 = 15045.
 | F1 | fresh | F1-A | PASS | 2265 / 182 | 01a08686-d10b-77a2-a61f-70f18de75d6e | One question naming candidate cache targets/slow operations via A–D multiple choice ("repeated local-file scans", "repeated remote-metadata lookups", "complete CLI runs combining both", "installation"); structure and content both hold. |
 | F2 | fresh | F2-A | PASS | 2718 / 2101 | 01a08687-87b7-71e3-be5f-97b02a85ca9c | No clarification; 2 distinct approaches (dispatcher-owned handling vs dedicated version handler) differing in where responsibility lives; trade-offs, recommendation, all categories explicit. |
 | F3 | fresh | F3-A | PASS | 3502 / 2492 | 01a08688-e948-71a0-98f8-72013694e5e4 | Straight to 2 approaches (modal dialog vs inline row editor) differing in interaction structure with focus/complexity consequences; recommendation; categories explicit; no architecture. |
-| L1 | live | L1-Q1 | NOT RUN | | | |
-| L1 | live | L1-Q2 | NOT RUN | | | |
-| L1 | live | L1-A | NOT RUN | | | |
-| L2 | live | L2-A | NOT RUN | | | |
-| L2 | live | L2-ARCH | NOT RUN | | | |
-| L2 | live | L2-COMP | NOT RUN | | | |
-| L2 | live | L2-COMP-R | NOT RUN | | | |
-| L2 | live | L2-FLOW | NOT RUN | | | |
-| L2 | live | L2-DONE | NOT RUN | | | |
+| L1 | live | L1-Q1 | PASS | 3280 / 197 | 01a0869e-9ebe-71c0-92b7-77371863e7c9 | One question naming exactly `D_DUPLICATE` (skip vs. update on existing-email match); rule 1; nothing else. |
+| L1 | live | L1-Q2 | PASS | 113 / 180 | 01a0869e-9ebe-71c0-92b7-77371863e7c9 | One question naming exactly `D_INVALID` (abort vs. reject-and-continue); rule 2; first answer not reopened. |
+| L1 | live | L1-A | PASS | 143 / 2845 | 01a0869e-9ebe-71c0-92b7-77371863e7c9 | 2 distinct approaches (application-level import coordinator vs. repository-owned batch import) differing in orchestration/transactional-writing ownership; trade-offs, recommendation, all categories explicit; no reopened facts, no architecture. |
+| L2 | live | L2-A | PASS | 4138 / 3358 | 01a086a1-7706-7263-afa6-4f7967a80390 | 2 distinct approaches (application-level generation operation with a pure digest builder vs. button-controller-owned generation) differing in responsibility ownership; one clear recommendation; all categories explicit. |
+| L2 | live | L2-ARCH | PASS | 35 / 1741 | 01a086a1-7706-7263-afa6-4f7967a80390 | Identifies the selected approach; five named boundaries (execution/application/policy/integration/state ownership + determinism); no components/data-flow/error-handling/testing content. |
+| L2 | live | L2-COMP | PASS | 22 / 1847 | 01a086a1-7706-7263-afa6-4f7967a80390 | Advances once to five components; dedup and text-formatting ownership both assigned to the pure digest builder; retains product rules; no data-flow content. |
+| L2 | live | L2-COMP-R | PASS | 392 / 2991 | 01a086a1-7706-7263-afa6-4f7967a80390 | Same 5 component names/count/ownership as `L2-COMP`; explicit responsibility/input/output/side-effects fields; dedup and formatting ownership explicit; no drift; not treated as approval. |
+| L2 | live | L2-FLOW | PASS | 20 / 1968 | 01a086a1-7706-7263-afa6-4f7967a80390 | Six-step trace; dedup explicitly precedes grouping ("After deduplication finishes, group winners..."); handles empty snapshot (`No notifications.\n`); atomic publication once; no persistent derived state. |
+| L2 | live | L2-DONE | PASS | 198 / 161 | 01a086a1-7706-7263-afa6-4f7967a80390 | Acknowledges completion only ("Acknowledged. ... architecture, components, and data flow are approved. No further sections or implementation will follow."); no new section, no re-request of approval, no implementation. |
 | H1 | supplied-history | H1 | PASS | 5268 / 62 | 01a0868a-9f6a-7d32-89f4-3f42ee00d691 | One question requesting explicit architecture-approval status; treats the checkpoint as praise, not approval; no components, revision, or implementation. |
 | H2 | supplied-history | H2 | PASS | 6064 / 2318 | 01a0868b-d1d8-7d51-bab6-b2015f171a88 | Only a revised Components section with exactly GenerateCoordinator, DigestBuilder, TextRenderer, each with explicit responsibility/input/output/side-effects fields; ownership unchanged; not treated as approval; no advance to data flow. |
 | H3 | supplied-history | H3 | PASS | 5249 / 2161 | 01a0868c-f3bc-7261-a803-65d30d8b62d9 | Advances once to Components; the "Data contracts and lifetime" bullet defines cross-component interface payloads and state ownership, not an `L2-FLOW`-style activation trace; no error-handling or testing content; round-1's failing "Risky integration assumptions" paragraph is absent. |
@@ -1196,10 +1196,23 @@ END LIVE CHECKPOINT
 ### L1
 | Step | Dispatched (bytes) | Returned (bytes) | Accumulated | Rule / message | Gate check before dispatch |
 |---|---|---|---|---|---|
+| 1 (seed) | 3280 | 197 | 3477 | seed | `gate: 0 + 3280 + 768 = 4048 -> OK` |
+| 2 (continuation 1) | 113 | 180 | 3770 | rule 1 → `D_DUPLICATE` reply | `gate: 3477 + 113 + 768 = 4358 -> OK` |
+| 3 (continuation 2) | 143 | 2845 | 6758 | rule 2 → `D_INVALID` reply | `gate: 3770 + 143 + 3072 = 6985 -> OK` |
+
+L1 final accumulated: **6758** bytes. No allowance was exceeded.
 
 ### L2
 | Step | Dispatched (bytes) | Returned (bytes) | Accumulated | Rule / message | Gate check before dispatch |
 |---|---|---|---|---|---|
+| 1 (seed) | 4138 | 3358 | 7496 | seed | `gate: 0 + 4138 + 3072 = 7210 -> OK` |
+| 2 (continuation 1) | 35 | 1741 | 9272 | `I select your recommended approach.` → `L2-ARCH` | `gate: 7496 + 35 + 1536 = 9067 -> OK` (returned 1741 exceeded the 1536 allowance by 205 bytes; not itself a failure) |
+| 3 (continuation 2) | 22 | 1847 | 11141 | `Architecture approved.` → `L2-COMP` | `gate: 9272 + 22 + 1792 = 11086 -> OK` (returned 1847 exceeded the 1792 allowance by 55 bytes) |
+| 4 (continuation 3) | 392 | 2991 | 14524 | components-revision message → `L2-COMP-R` | `gate: 11141 + 392 + 2048 = 13581 -> OK` (returned 2991 exceeded the 2048 allowance by 943 bytes) |
+| 5 (continuation 4) | 20 | 1968 | 16512 | `Components approved.` → `L2-FLOW` | `gate: 14524 + 20 + 1536 = 16080 -> OK` (returned 1968 exceeded the 1536 allowance by 432 bytes) |
+| 6 (continuation 5) | 198 | 161 | 16871 | final approval message → `L2-DONE` | `gate: 16512 + 198 + 256 = 16966 -> OK` |
+
+L2 final accumulated: **16871** bytes. The gate never stopped the journey; every continuation from step 2 onward returned more bytes than its allowance, progressively reducing headroom, but no projected total exceeded 20,000 and the 30,000-byte hard boundary was never approached.
 
 ## Judgements (campaign 2)
 
@@ -1249,6 +1262,140 @@ Expected — `F3-A`: proceeds directly to 2–3 approaches (no requirements ques
 - **No architecture, no assumed selection/approval:** no components/data-flow/error-handling/testing content appears; the response makes no approval or selection claim. No closing selection question is asked, which the Expected paragraph only permits, not requires. Holds.
 
 **Verdict: PASS.** Every element of the Expected paragraph is satisfied with quoted evidence.
+
+### L1-Q1 (campaign 2)
+
+Expected — `L1-Q1`: exactly one relevant question and nothing else, with optional choices integral to that question; asks for either existing-contact collision behavior or the fate of invalid rows; does not combine the decisions into a package choice, assume either policy, recap the context, propose approaches, or ask about already specified facilities, input format, scale, or interaction stages.
+
+Quoted question (session `01a0869e-9ebe-71c0-92b7-77371863e7c9`): "When a valid row's normalized email matches an existing contact, should the import **A)** skip the row and preserve the existing contact, or **B)** update only that contact's name from the CSV?"
+
+- **Decision requested:** `D_DUPLICATE` — what happens to a row whose normalized email matches an existing contact. The question names exactly this choice ("skip the row and preserve the existing contact" vs. "update only that contact's name from the CSV"). Holds.
+- **Structure:** one sentence, one question mark, two lettered options integral to that single question. No recap of the project context, no proposed approaches, no mention of `D_INVALID`, and no question about already-specified facilities (file format, size limit, or interaction stages are not raised). Holds.
+- **Rule matched:** rule 1 — "a compliant question may address either `D_DUPLICATE` or `D_INVALID`. Send only that fact's exact reply and mark only that fact resolved." This is a clean, single-fact `D_DUPLICATE` question.
+
+**Verdict: PASS.** Reply sent: the exact `D_DUPLICATE` reply — "Skip rows whose normalized email already exists in the address book, and leave those existing contacts unchanged." `D_INVALID` was not disclosed.
+
+### L1-Q2 (campaign 2)
+
+Expected — `L1-Q2`: after one fixed answer, exactly one question about the other unresolved policy and nothing else; a second question is necessary; the first answer is preserved without reopening or recapping it; no premature approaches; no silent fill of the remaining policy.
+
+Quoted question (same session): "If any data row is invalid, should the import **A)** abort the entire import without writing any contacts, or **B)** reject invalid rows and continue importing eligible valid rows?"
+
+- **Decision requested:** `D_INVALID` — whether invalid rows abort the entire import or are rejected while remaining valid rows import. The question names exactly this choice. Holds.
+- **Necessity of a second question:** resolving `D_DUPLICATE` (skip vs. update on collision) does not determine whether invalid rows abort or are rejected while valid rows proceed; this is a distinct, still-unresolved decision. Holds.
+- **No reopening/recapping the first answer:** the question contains no reference to existing-contact matching, duplicate emails, or skipping; the settled `D_DUPLICATE` fact is neither restated nor questioned. Holds.
+- **Single question, nothing else:** one sentence, one question mark, two lettered options integral to that question; no approaches, no design section, no confirmation request for the first answer. Holds.
+- **Rule matched:** rule 2 — "the question must address the other, still-unresolved fact. Send its exact reply."
+
+**Verdict: PASS.** Reply sent: the exact `D_INVALID` reply — "Reject invalid rows and import the remaining eligible valid rows. Include each rejected row's number and validation reason in the final result."
+
+### L1-A (campaign 2)
+
+Expected — `L1-A`: after the second fixed answer, clarification stops; 2–3 substantively distinct, compliant approaches with concrete trade-offs and one recommendation; distinctness in ownership/organization of classification, policy enforcement, orchestration, or transactional writing (not interchangeable parsing/collection utilities); all approaches preserve skip-existing, reject-invalid/import-valid, normalized identity, final reporting, and rollback on storage failure; purpose, constraints, measurable success criteria, and risky assumptions explicit; success criteria checkable for one-new/one-duplicate/one-invalid row (or equivalent); no reopened facts; no architecture; no assumed selection.
+
+- **Clarification has stopped:** the response contains no question mark anywhere; it opens directly with "**Purpose**" and proceeds through Constraints, Measurable Success Criteria, Risky Assumptions, and Approaches. Holds.
+- **2–3 distinct, compliant approaches:** "1. **Application-level import coordinator — recommended.** A small service combines validation results, performs existing-email matching through the repository, inserts eligible contacts transactionally, and assembles the summary." vs. "2. **Repository-owned batch import.** The application validates the file, then gives valid rows to a repository operation that owns matching, skipping, transactional insertion, and persistence outcomes." Two approaches differing in *where import classification, policy enforcement, orchestration, and transactional writing live* (a coordinating service vs. the repository itself) — matches the Expected paragraph's named axis, not an interchangeable utility swap. Holds.
+- **Trade-offs and recommendation:** approach 1 — "Keeps import policy outside both UI and persistence; adds one orchestration boundary"; approach 2 — "Centralizes batch-write guarantees, but makes the repository responsible for import-specific policy and reporting contracts." Recommendation: "Choose **1**: it reuses the existing facilities while keeping validation, product policy, and persistence responsibilities separate." Holds.
+- **All approaches preserve required behaviors:** the shared Constraints state "Skip valid rows matching existing emails without changing those contacts. New contacts store their name and normalized email" (skip-existing, normalized identity) and are silently unmodified by either approach description; Measurable Success Criteria state "Every invalid row is rejected with its original row number and existing validation reason(s) ... Every eligible valid row becomes exactly one new contact; every pre-existing contact remains unchanged" (reject-invalid/import-valid) and "A storage failure leaves the address book unchanged" (rollback). Holds.
+- **Purpose:** "Import eligible CSV contacts in one confirmed operation, preserving existing contacts and reporting invalid rows rather than blocking valid ones." Holds.
+- **Constraints:** as quoted above, plus "Unreadable files and incorrect headers cause no writes; storage failures roll back the import's entire write set." Holds.
+- **Measurable, checkable success criteria:** "On successful completion, `imported + skipped + rejected = total data rows`, with each row counted exactly once," combined with "Every eligible valid row becomes exactly one new contact; every pre-existing contact remains unchanged" and "Every invalid row is rejected with its original row number and existing validation reason(s)." Applied to one valid new row, one otherwise-valid existing-email row, and one invalid row, this general formulation entails exactly the checkable outcome the Expected paragraph describes — an equivalent testable formulation. Holds.
+- **Risky assumptions quoted:** "Repository matching can apply the same normalized-email identity to existing contacts, even if their stored email formatting differs," and "Validator results retain original row numbers and all applicable reasons when valid and invalid rows are separated." Holds.
+- **No reopened facts, no architecture, no assumed selection:** neither `D_DUPLICATE` nor `D_INVALID` is questioned or reversed (both appear only as settled constraints); no components/data-flow/error-handling/testing draft appears; the response closes "Treat this as one cohesive feature; splitting it into independently delivered subprojects adds no useful capability," making no claim of selection or approval. No closing approach-selection question is asked, which the Expected paragraph only permits, not requires. Holds.
+
+**Verdict: PASS.** Every element of the Expected paragraph is satisfied with quoted evidence.
+
+### L2-A (campaign 2)
+
+Expected — `L2-A` (campaign-2 wording): goes directly to 2–3 substantively distinct approaches without a clarification turn; alternatives materially differ in responsibility or representation (not merely sort/group/container primitive); each preserves the complete external contract; trade-offs; one clearly recommended approach; purpose, constraints, measurable success criteria, and risky assumptions explicit, including deterministic output, correct duplicate/group/order behavior, unchanged source data, and atomic publication; no forbidden persistence/networking/scheduling/background work; no design section or presumed approval.
+
+- **No clarification turn:** the response opens with "**Purpose**" and contains no question mark anywhere. Holds.
+- **2–3 approaches differing in responsibility, not primitive:** "1. **Application-level generation operation with a pure digest builder — recommended.** The button delegates to a small operation that owns adapter interaction; a side-effect-free builder owns deduplication, grouping, ordering, and rendering." vs. "2. **Button-controller-owned generation.** The existing button controller owns adapter interaction and digest policy together, optionally using private helpers." These differ in *where responsibility is owned* (split operation/pure builder vs. one undivided controller), matching the fixture's own example axis, not which sort/group primitive executes the same organization. Holds.
+- **Complete external contract preserved:** "Both satisfy the same observable contract" — neither approach description modifies the shared Purpose/Constraints/Success-Criteria text that precedes them. Holds.
+- **Trade-offs:** approach 1 — "Cost: one small, explicit boundary between coordination and transformation"; approach 2 — "Cost: notification rules become coupled to UI coordination, and verification depends more heavily on controller fixtures." Holds.
+- **One clear recommendation:** "**Approach 1** provides the clearer responsibility boundary without requiring separate services, storage, or independently delivered subprojects," reinforcing approach 1's own "— recommended" label. Unambiguous, not a combination. Holds.
+- **Purpose:** "Generate an exact, reproducible notification digest on explicit user request, without changing or consuming source events." Holds.
+- **Constraints:** "Use the existing Generate button, snapshot reader, whole-text publisher, and local error display; UI controls and storage choices remain out of scope. Process one immutable, ordered snapshot of 0–100 validated events per activation, with no concurrent generation." Holds.
+- **Success criteria incl. deterministic output/duplicate-group-order/unchanged source/atomic publication:** "Identical snapshots produce byte-identical UTF-8 output" (deterministic); "Global, case-sensitive ID deduplication retains the complete record with the greatest timestamp; equal timestamps retain the record appearing later in the snapshot ... Groups follow ASCII source order. Events within each group follow ascending timestamp, then ASCII ID order" (duplicate/group/order); "Leave source events unchanged and available until the separate existing deletion action removes them" (unchanged source data); "Each successful activation reads exactly one snapshot and publishes exactly one complete replacement" (atomic publication). Holds.
+- **Risky assumptions quoted:** "Atomic publication must also have unambiguous failure semantics: it cannot replace the text and subsequently report failure," and "Message lengths are unbounded by the baseline, so the event-count limit alone does not establish a memory or latency bound." Holds.
+- **No forbidden persistence/network/scheduler/background work; no design section; no presumed approval:** the shared Constraints explicitly rule out "history, persisted derived state, read markers, time filtering, network access, scheduling, automatic refresh, or background processing"; no architecture/components/data-flow/error-handling/testing heading appears; the response makes no approval claim. Holds.
+
+**Verdict: PASS.**
+
+**Selection rule applied:** the recommended approach's identifying text is **"Application-level generation operation with a pure digest builder"** (Approach 1), confirmed by the closing "**Approach 1** provides the clearer responsibility boundary without requiring separate services, storage, or independently delivered subprojects." The recommendation is singular and unambiguous, so selection proceeds per the frozen rule; the selection message (`I select your recommended approach.`) was sent as continuation 1.
+
+### L2-ARCH (campaign 2)
+
+Expected — `L2-ARCH`: following selection, drafts architecture only; explicitly identifies the selected approach; explains the system boundary and high-level organization among existing host/adapters and digest-generation logic; preserves manual execution, one immutable snapshot per activation, transient derived state, unchanged source retention, deterministic generation, and atomic publication; does not replace the selected approach, introduce new product decisions, or claim approval; high-level references to components/failure boundaries are legitimate, but separately developing components/data-flow/error-handling/testing is premature; stops for verification.
+
+- **Identifies the selected approach:** "**Selected approach:** An application-level generation operation coordinates the existing adapters, while a pure digest builder owns the notification-to-text rules" — matches Approach 1's identifying text, not a replacement. Holds.
+- **Architecture only, high-level organization among host/adapters and digest logic:** five named boundaries — "Execution boundary," "Application boundary," "Policy boundary," "Integration boundary," "State ownership" (plus "Determinism") — each describing organization between the existing button/adapters and the new digest-generation logic, with no separate components/data-flow/error-handling/testing heading. Holds.
+- **Manual execution preserved:** "Generation runs entirely within the desktop application, only in response to Generate ... no worker, scheduler, refresh subscription, or network dependency is introduced." Holds.
+- **One immutable snapshot per activation:** "The pure builder accepts the validated, ordered snapshot" (singular), consistent with "Each activation performs one synchronous operation." Holds.
+- **Transient derived state:** "Snapshot references, transformation structures, and the unpublished candidate exist only for the current activation" under State ownership. Holds.
+- **Unchanged source retention:** "No control selection, storage redesign, or changes to the separate deletion action are required," consistent with source events remaining untouched. Holds.
+- **Deterministic generation / atomic publication:** "Determinism: Output depends exclusively on snapshot contents and positions ... rendering preserves messages and explicitly uses LF and UTF-8" and "Existing adapters remain responsible for input, atomic whole-text replacement, and local error display." Holds.
+- **No new product decisions, no claimed approval; high-level component reference is legitimate, not a developed Components section:** the Policy-boundary bullet's mention of "the pure builder" is a boundary-level reference needed to explain the architecture, not a components breakdown with responsibility/input/output/side-effects fields; no heading or itemized breakdown for components, data flow, error handling, or testing appears. The response ends "This remains one cohesive feature, not separate services or independently deployed subsystems," a closing observation rather than an approval claim or an advance to another section — an implicit stop for verification. Holds.
+
+**Verdict: PASS.**
+
+### L2-COMP (campaign 2)
+
+Expected — `L2-COMP`: following explicit architecture approval, advances exactly once to components; identifies coherent components with responsibilities/interfaces/dependencies consistent with the approved architecture; ownership of duplicate-ID resolution and final text formatting identifiable, as are existing adapter boundaries; components need not match a prescribed count; retains all product rules; does not reopen approach/architecture; does not advance to data flow or later; stops for verification; does not treat architecture approval as approval of components.
+
+- **Advances exactly once, components only:** sole heading "## Components — proposed," listing five components; no data-flow, error-handling, or testing content. Holds.
+- **Coherent components consistent with approved architecture:** "1. Generate binding" (execution boundary), "2. Generation operation" (application boundary), "3. Pure digest builder" (policy boundary), "4. Existing adapter interfaces" (integration boundary), "5. Data contracts" — a close match to the architecture's named boundaries approved in the prior turn. Holds.
+- **Duplicate-ID resolution and text-formatting ownership identifiable:** "**3. Pure digest builder** ... It owns all deduplication, grouping, ordering, and rendering rules." Both duplicate resolution ("deduplication") and final text formatting ("rendering") are attributed to this one component. Holds.
+- **Existing adapter boundaries identifiable:** component 4, "Existing adapter interfaces," explicitly lists "Snapshot reader," "Whole-text publisher," and "Local error display," matching the architecture's adapter references. Holds.
+- **Component count not prescribed:** five components are presented; the Expected paragraph does not require a specific count, so this is compliant by default. Holds.
+- **Retains product rules:** e.g. "It consumes the adapter's validated records without modifying them and preserves message text exactly" and "No incremental append interface is used" restate rather than alter the frozen product rules. Holds.
+- **Does not reopen approach/architecture:** no re-litigation of Approach 1's selection or the five architecture boundaries; the component list only elaborates responsibilities within those already-approved boundaries. Holds.
+- **Does not advance to data flow or claim components approved:** the response ends "The existing output pane remains the display surface; no new storage or UI component is introduced" — a scoping statement, not a claim of approval or an advance to data flow; no data-flow, error-handling, or testing content follows. Holds.
+
+**Verdict: PASS.**
+
+### L2-COMP-R (campaign 2)
+
+Expected — `L2-COMP-R`: following the revision request, stays on components and returns the complete revised section; each existing component has explicit responsibility/input/output/side-effects fields, with "none" or equivalent where side effects are absent; duplicate-ID resolution and text-formatting ownership explicit; component names, count, ownership, approved architecture, and product behavior unchanged from the preceding accepted material (clarifying contracts is allowed; moving responsibilities, splitting/adding components, or changing dedup/retention/publication semantics is revision drift → FAIL); does not treat the request as approval or advance to data flow; stops for verification.
+
+- **Stays on components, complete revised section:** sole heading "## Components — revised proposal," re-presenting all five components under the requested field structure. Holds.
+- **Explicit responsibility/input/output/side-effects fields; "none" where absent:** each of the five components carries all four bolded fields (e.g. component 3: "**Side effects:** None. Does not mutate records or access adapters, UI state, clocks, storage, or previous output"; component 5: "**Side effects:** None. Contracts introduce no mutation, storage, or additional retained state"). Holds.
+- **Duplicate-ID resolution and text-formatting ownership explicit:** component 3's Responsibility field states, "Own **duplicate-ID resolution** globally: retain the complete record with the latest timestamp, breaking equal-timestamp ties by later snapshot position. Also own grouping, ordering, and **final text formatting**" — both owners named and bolded, directly answering the revision request's instruction. Holds.
+- **Same names, count, ownership as the preceding `L2-COMP` response:** names are identical — "1. Generate binding," "2. Generation operation," "3. Pure digest builder," "4. Existing adapter interfaces," "5. Data contracts" — same count (5), and the same component owns the same work in each case (the builder still owns dedup/group/order/format; the operation still owns orchestration, explicitly stated as "It owns orchestration, not duplicate resolution or formatting"; adapters still own I/O). No responsibility moved between components. Holds — no revision drift.
+- **Product behavior unchanged:** the dedup tie-break rule ("retain the complete record with the latest timestamp, breaking equal-timestamp ties by later snapshot position"), the rendering rules (source header, `timestamp - message` lines, one blank line between groups, exactly one terminal LF, empty-input `No notifications.\n`), and the publication guarantee ("Publication replaces displayed text atomically, never incrementally") are restated identically to the prior accepted material, not altered. Holds — no drift in dedup, retention, or publication semantics.
+- **Does not treat as approval or advance to data flow:** the response contains no data-flow, error-handling, or testing content, and does not assert that the revision itself constitutes approval; it simply stops after the fifth component ("Data contracts") without advancing or claiming approval, which satisfies "stops for verification" behaviorally. Holds.
+
+**Verdict: PASS.**
+
+### L2-FLOW (campaign 2)
+
+Expected — `L2-FLOW`: following explicit approval of the revised components, advances exactly once to data flow; traces one Generate activation through snapshot acquisition, global duplicate-ID winner selection, grouping, group/event ordering, complete text construction, and atomic publication, using the approved responsibilities; handles the empty snapshot; makes the ordering clear enough that grouping cannot precede global deduplication in a way that would retain cross-source duplicate IDs; preserves source events; avoids persistent derived state; exposes no partial digest; does not reopen approved sections or separately develop error handling/testing; stops for verification.
+
+- **Advances exactly once, data flow only:** sole heading "## Data flow — proposed" with six numbered steps; no components, error-handling, or testing heading. Holds.
+- **Snapshot acquisition:** "1. **Activate and read.** The existing Generate binding invokes the generation operation, which reads exactly one immutable snapshot. All subsequent processing uses that snapshot without rereading the source." Holds.
+- **Global duplicate-ID winner selection:** "2. **Resolve duplicate IDs.** The pure digest builder traverses records in snapshot order, maintaining an activation-local lookup keyed by exact, case-sensitive ID. A record replaces the current winner when its timestamp is greater or equal ... Replacement retains the complete record." Holds.
+- **Grouping strictly after global dedup, no cross-source retention of eliminated duplicates:** "3. **Group and order.** After deduplication finishes, group winners by their exact source" — grouping is explicitly gated on "After deduplication finishes," so a duplicate ID already eliminated in step 2 cannot reappear grouped under another source in step 3. Holds.
+- **Group/event ordering:** step 3 continues, "Sort source groups in ascending ASCII order. Within each group, sort records by ascending timestamp, then ascending ASCII ID." Holds.
+- **Complete text construction, including empty snapshot:** "4. **Construct the complete text.** ... With no retained records, return exactly `No notifications.\n`." Holds.
+- **Atomic publication, no partial digest:** "5. **Publish once.** The builder returns the complete candidate to the generation operation, which supplies it to the existing atomic whole-text publisher exactly once per successful activation—even when it matches the displayed digest." Holds.
+- **Preserves source events, avoids persistent derived state:** "6. **Retain only displayed output.** Snapshot references, winner lookup, grouping structures, and unpublished candidate are activation-scoped. After the activation, no additional derived state or digest history is retained. Source events remain available to the separate existing deletion action." Holds.
+- **Does not reopen approved sections or separately develop error handling/testing:** no step introduces a failure taxonomy, retries, or test cases; the response references only the already-approved generation operation, builder, and adapters. Holds.
+- **Stops for verification:** the response ends at step 6 without advancing further, without claiming data-flow approval, and without drafting error handling or testing — an implicit stop for verification consistent with the overlay's per-section stop instruction. Holds.
+
+**Verdict: PASS.**
+
+### L2-DONE (campaign 2)
+
+Expected — `L2-DONE` (campaign-2 wording): following explicit data-flow approval and the statement that the review is complete, the response only acknowledges completion; it does not draft error handling, testing, or any other section, reopen decisions, request redundant approval, implement anything, or begin an implementation plan; completion is supported by the recorded selection and explicit approvals (architecture, revised components, data flow), not inferred from earlier praise or the revision request.
+
+Full response (session `01a086a1-7706-7263-afa6-4f7967a80390`): "Acknowledged. This smoke-case design review is complete; architecture, components, and data flow are approved. No further sections or implementation will follow."
+
+- **Acknowledges completion only:** the sole content is the acknowledgement sentence itself; no heading, no new section. Holds.
+- **No error handling, testing, or other section drafted:** the response contains no failure taxonomy, test cases, or any content beyond restating that the review is complete. Holds.
+- **No reopened decisions, no re-request of approval, no implementation:** "No further sections or implementation will follow" is a closing statement, not a question or an implementation plan; it does not reopen the approach selection, architecture, components, or data-flow content. Holds.
+- **Completion supported by the recorded approvals, not inferred from praise/revision:** "architecture, components, and data flow are approved" names exactly the three explicit approvals actually granted in this journey (`Architecture approved.`, `Components approved.` following the components-revision message, and the final approval message covering data flow) — it does not cite the earlier revision request as approval and does not rely on any non-approving praise. Holds.
+
+**Verdict: PASS.**
 
 ### H1 (campaign 2)
 
@@ -1355,6 +1502,177 @@ Recommend the **modal dialog** for its clear transaction boundary and smaller in
 - “Normalized” means trimming both draft and original for comparison, without case folding or Unicode canonical normalization.
 - API success confirms the submitted trimmed name, without additional server-side rewriting.
 - For the recommended approach, temporarily preventing interaction with the rest of the list is acceptable; an existing accessible dialog component would reduce implementation risk.
+
+### L1 — seed response (live, campaign 2, session 01a0869e-9ebe-71c0-92b7-77371863e7c9)
+
+When a valid row’s normalized email matches an existing contact, should the import **A)** skip the row and preserve the existing contact, or **B)** update only that contact’s name from the CSV?
+
+### L1 — continuation 1: rule 1 → D_DUPLICATE reply → response (campaign 2)
+
+Message sent: "Skip rows whose normalized email already exists in the address book, and leave those existing contacts unchanged."
+
+Response:
+
+If any data row is invalid, should the import **A)** abort the entire import without writing any contacts, or **B)** reject invalid rows and continue importing eligible valid rows?
+
+### L1 — continuation 2: rule 2 → D_INVALID reply → response (campaign 2)
+
+Message sent: "Reject invalid rows and import the remaining eligible valid rows. Include each rejected row's number and validation reason in the final result."
+
+Response:
+
+**Purpose**
+Import eligible CSV contacts in one confirmed operation, preserving existing contacts and reporting invalid rows rather than blocking valid ones.
+
+**Constraints**
+- Reuse the existing file picker, CSV parser/validator, row-numbered validation messages, and transactional repository.
+- Input is UTF-8 with `name,email` headers and at most 500 data rows; normalized emails are unique within each file.
+- Validate before existing-contact matching. Identity is email with surrounding whitespace trimmed and letters lowercased.
+- Skip valid rows matching existing emails without changing those contacts. New contacts store their name and normalized email.
+- Interaction remains file selection → one Import confirmation → final summary. No preview/edit stage, field mapping, network, background processing, or concurrent editing.
+- Unreadable files and incorrect headers cause no writes; storage failures roll back the import’s entire write set.
+
+**Measurable Success Criteria**
+- On successful completion, `imported + skipped + rejected = total data rows`, with each row counted exactly once.
+- Every invalid row is rejected with its original row number and existing validation reason(s), including invalid rows whose email matches an existing contact.
+- Every eligible valid row becomes exactly one new contact; every pre-existing contact remains unchanged.
+- Imported counts reflect committed inserts only. A storage failure leaves the address book unchanged.
+
+**Risky Assumptions**
+- Repository matching can apply the same normalized-email identity to existing contacts, even if their stored email formatting differs.
+- The repository exposes lookup and insertion operations usable within one transaction.
+- Validator results retain original row numbers and all applicable reasons when valid and invalid rows are separated. These interface assumptions need verification, not new product policies.
+
+**Approaches**
+1. **Application-level import coordinator — recommended.** A small service combines validation results, performs existing-email matching through the repository, inserts eligible contacts transactionally, and assembles the summary. Keeps import policy outside both UI and persistence; adds one orchestration boundary.
+2. **Repository-owned batch import.** The application validates the file, then gives valid rows to a repository operation that owns matching, skipping, transactional insertion, and persistence outcomes. Centralizes batch-write guarantees, but makes the repository responsible for import-specific policy and reporting contracts.
+
+**Recommendation**
+Choose **1**: it reuses the existing facilities while keeping validation, product policy, and persistence responsibilities separate. Treat this as one cohesive feature; splitting it into independently delivered subprojects adds no useful capability.
+
+### L2 — seed response (live, campaign 2, session 01a086a1-7706-7263-afa6-4f7967a80390)
+
+**Purpose**
+Generate an exact, reproducible notification digest on explicit user request, without changing or consuming source events.
+
+**Constraints**
+- Use the existing Generate button, snapshot reader, whole-text publisher, and local error display; UI controls and storage choices remain out of scope.
+- Process one immutable, ordered snapshot of 0–100 validated events per activation, with no concurrent generation.
+- Retain only the displayed digest between activations. No history, persisted derived state, read markers, time filtering, network access, scheduling, automatic refresh, or background processing.
+- Leave source events unchanged and available until the separate existing deletion action removes them.
+
+**Measurable Success Criteria**
+- Each successful activation reads exactly one snapshot and publishes exactly one complete replacement, including when the result matches the current digest.
+- Global, case-sensitive ID deduplication retains the complete record with the greatest timestamp; equal timestamps retain the record appearing later in the snapshot. The winning record’s source determines its group.
+- Groups follow ASCII source order. Events within each group follow ascending timestamp, then ASCII ID order.
+- Each group contains its exact source header followed by `timestamp - message` lines. Groups have exactly one blank line between them; the digest ends with exactly one LF. Empty input produces exactly `No notifications.\n`.
+- Identical snapshots produce byte-identical UTF-8 output, preserving message text without trimming or Unicode normalization.
+- A reading, transformation, or publication failure preserves the previous digest and displays a local error; no partial digest becomes visible.
+
+**Risky Assumptions**
+- Atomic publication must also have unambiguous failure semantics: it cannot replace the text and subsequently report failure.
+- The publication boundary preserves Unicode and LF characters without platform-specific conversion or added encoding markers.
+- “Only the current displayed digest” permits temporary working data and an unpublished candidate during an activation; neither survives afterward as retained history.
+- Message lengths are unbounded by the baseline, so the event-count limit alone does not establish a memory or latency bound. No additional truncation or size cap is proposed.
+
+**Approaches**
+1. **Application-level generation operation with a pure digest builder — recommended.** The button delegates to a small operation that owns adapter interaction; a side-effect-free builder owns deduplication, grouping, ordering, and rendering. This keeps digest policy independent of the desktop UI and makes exact-output verification straightforward. Cost: one small, explicit boundary between coordination and transformation.
+
+2. **Button-controller-owned generation.** The existing button controller owns adapter interaction and digest policy together, optionally using private helpers. This minimizes new structure and keeps the feature in one existing location. Cost: notification rules become coupled to UI coordination, and verification depends more heavily on controller fixtures.
+
+Both satisfy the same observable contract. **Approach 1** provides the clearer responsibility boundary without requiring separate services, storage, or independently delivered subprojects.
+
+### L2 — continuation 1: "I select your recommended approach." → response (campaign 2)
+
+## Architecture — proposed
+
+**Selected approach:** An application-level generation operation coordinates the existing adapters, while a pure digest builder owns the notification-to-text rules.
+
+- **Execution boundary:** Generation runs entirely within the desktop application, only in response to Generate. Each activation performs one synchronous operation; no worker, scheduler, refresh subscription, or network dependency is introduced.
+- **Application boundary:** The generation operation coordinates snapshot reading, digest construction, and whole-text publication. The button delegates to this operation rather than owning notification rules.
+- **Policy boundary:** The pure builder accepts the validated, ordered snapshot and returns the complete digest text. It owns global deduplication, grouping, ordering, and exact rendering. It has no access to adapters, UI state, clocks, storage, or previously generated output.
+- **Integration boundary:** Existing adapters remain responsible for input, atomic whole-text replacement, and local error display. No control selection, storage redesign, or changes to the separate deletion action are required.
+- **State ownership:** The displayed digest is the only derived state retained between activations; there is no additional digest cache. Snapshot references, transformation structures, and the unpublished candidate exist only for the current activation.
+- **Determinism:** Output depends exclusively on snapshot contents and positions. Comparisons are case-sensitive and locale-independent; rendering preserves messages and explicitly uses LF and UTF-8 without an added byte-order mark.
+
+This remains one cohesive feature, not separate services or independently deployed subsystems.
+
+### L2 — continuation 2: "Architecture approved." → response (campaign 2)
+
+## Components — proposed
+
+**1. Generate binding**
+The existing button invokes the generation operation. It contains no deduplication, ordering, or rendering rules and introduces no additional activation sources.
+
+**2. Generation operation**
+A single application-level entry point coordinates one activation. Its dependencies are the snapshot reader, pure digest builder, whole-text publisher, and local error display. It retains no snapshot, intermediate results, or digest cache between activations.
+
+**3. Pure digest builder**
+Its contract is `buildDigest(snapshot) → complete text`. It owns all deduplication, grouping, ordering, and rendering rules. These are internal responsibilities, not separately exposed services. It consumes the adapter’s validated records without modifying them and preserves message text exactly. Its returned text has the specified LF structure and a deterministic UTF-8 representation.
+
+**4. Existing adapter interfaces**
+- **Snapshot reader:** Supplies an immutable sequence of validated events whose positions remain available for tie-breaking.
+- **Whole-text publisher:** Accepts the complete candidate text for atomic replacement of the displayed digest. No incremental append interface is used.
+- **Local error display:** Provides the existing application-local reporting surface.
+
+**5. Data contracts**
+An event contains exactly the relevant supplied fields: `id`, `source`, `timestamp`, and `message`. Snapshot position belongs to the sequence, not to the source record. Deduplication retains a complete winning record rather than combining fields from duplicates.
+
+The builder returns one text value—not a persistent digest model, history entry, or collection requiring further formatting by the UI. The existing output pane remains the display surface; no new storage or UI component is introduced.
+
+### L2 — continuation 3: "Revise only components. Present each existing component under these fields: responsibility, input, output, side effects. Make the owner of duplicate-ID resolution and the owner of final text formatting explicit within those fields. Keep the existing component names, count, ownership decisions, approved architecture, and all product rules unchanged. This is a revision request, not approval." → response (campaign 2)
+
+## Components — revised proposal
+
+### 1. Generate binding
+- **Responsibility:** Connect the existing Generate button to the generation operation; contain no notification-processing rules.
+- **Input:** An explicit user activation of Generate.
+- **Output:** One invocation of the generation operation.
+- **Side effects:** Initiates generation; introduces no other activation sources.
+
+### 2. Generation operation
+- **Responsibility:** Coordinate one activation using the snapshot reader, pure digest builder, whole-text publisher, and local error display. It owns orchestration, not duplicate resolution or formatting.
+- **Input:** A Generate invocation and access to those dependencies.
+- **Output:** The builder’s complete candidate text supplied to the publisher.
+- **Side effects:** Reads the snapshot and coordinates publication and local error reporting through existing adapters. Retains no snapshot, intermediate results, or digest cache between activations.
+
+### 3. Pure digest builder
+- **Responsibility:** Own **duplicate-ID resolution** globally: retain the complete record with the latest timestamp, breaking equal-timestamp ties by later snapshot position. Also own grouping, ordering, and **final text formatting**, leaving no further formatting to the UI.
+- **Input:** The validated, immutable, ordered event snapshot.
+- **Output:** One complete digest text value. Groups follow ASCII source order; events follow ascending timestamp then ASCII ID order. Each group has its source header and `timestamp - message` lines, with one blank line between groups and exactly one terminal LF. Empty input returns exactly `No notifications.\n`. Messages remain unchanged; UTF-8 encoding is deterministic and adds no byte-order mark.
+- **Side effects:** None. Does not mutate records or access adapters, UI state, clocks, storage, or previous output.
+
+### 4. Existing adapter interfaces
+- **Responsibility:** Provide immutable snapshot input, atomic whole-text publication, and application-local error display.
+- **Input:** A read request; complete candidate text for publication; error information for local display.
+- **Output:** An ordered snapshot from the reader; completion outcomes from publication and error-display calls.
+- **Side effects:** Reading leaves source events unchanged. Publication replaces displayed text atomically, never incrementally. Error display updates the existing local reporting surface.
+
+### 5. Data contracts
+- **Responsibility:** Define the supplied event fields, immutable snapshot sequence, and complete-text builder result. Snapshot position belongs to the sequence, not the source record.
+- **Input:** The established validated-record and ordered-snapshot guarantees.
+- **Output:** Contract shapes covering `id`, `source`, `timestamp`, `message`, snapshot order, and one complete digest text value—not a persistent digest model or history entry.
+- **Side effects:** None. Contracts introduce no mutation, storage, or additional retained state.
+
+### L2 — continuation 4: "Components approved." → response (campaign 2)
+
+## Data flow — proposed
+
+1. **Activate and read.** The existing Generate binding invokes the generation operation, which reads exactly one immutable snapshot. All subsequent processing uses that snapshot without rereading the source.
+
+2. **Resolve duplicate IDs.** The pure digest builder traverses records in snapshot order, maintaining an activation-local lookup keyed by exact, case-sensitive ID. A record replaces the current winner when its timestamp is greater **or equal**: traversal order makes the equal-timestamp replacement the later snapshot record. Replacement retains the complete record, including its source and message.
+
+3. **Group and order.** After deduplication finishes, group winners by their exact source. Sort source groups in ascending ASCII order. Within each group, sort records by ascending timestamp, then ascending ASCII ID. Comparisons are locale-independent; validated, fixed-width UTC timestamp strings can be compared lexicographically. Source records and snapshot order remain unchanged.
+
+4. **Construct the complete text.** For each group, create its source header followed by one `timestamp - message` line per retained record. Join lines with LF, join groups with two LFs, and append one final LF. With no retained records, return exactly `No notifications.\n`. Preserve supplied text without trimming, escaping, or normalization; its UTF-8 representation contains no added byte-order mark.
+
+5. **Publish once.** The builder returns the complete candidate to the generation operation, which supplies it to the existing atomic whole-text publisher exactly once per successful activation—even when it matches the displayed digest.
+
+6. **Retain only displayed output.** Snapshot references, winner lookup, grouping structures, and unpublished candidate are activation-scoped. After the activation, no additional derived state or digest history is retained. Source events remain available to the separate existing deletion action.
+
+### L2 — continuation 5: "Data flow approved. This completes the design review for this smoke case; error handling and testing are reviewed separately. Acknowledge completion only; do not draft further sections or implement." → response (campaign 2)
+
+Acknowledged. This smoke-case design review is complete; architecture, components, and data flow are approved. No further sections or implementation will follow.
 
 ### H1 — supplied-history evidence: non-runtime prompt shape (campaign 2, session 01a0868a-9f6a-7d32-89f4-3f42ee00d691)
 
