@@ -43,45 +43,82 @@ extract() {
   ' "$REPO/$1"
 }
 
+# line_of <file> <fixed-string> — line number of the first match, empty if none
+line_of() {
+  grep -Fn -e "$2" "$REPO/$1" 2>/dev/null | head -n1 | cut -d: -f1
+}
+
 # model_for <brainstorm|second_opinion|review> — prints configured default
 model_for() {
   grep -E "^gpt_${1}_model:" "$REPO/CLAUDE.md" | awk '{print $2}' | head -n1
 }
 
+# overlay_models <file> <role> — every model with an overlay begin marker
+overlay_models() {
+  grep -o "<!-- gpt-overlay:${2}:[^:]*:begin -->" "$REPO/$1" 2>/dev/null \
+    | sed -E 's/.*:([^:]*):begin -->/\1/' | sort -u
+}
+
+# check_overlay <role> <file> <model> <baseline-bytes>
+# Every overlay present is held to the same contract as the configured one:
+# both markers exactly once and in order (a missing end marker would make
+# extract run to EOF), non-empty body, and baseline+overlay within the cap.
+check_overlay() {
+  local role="$1" file="$2" model="$3" bytes_b="$4"
+  local bb eb lb le bytes_o
+  bb="<!-- gpt-overlay:${role}:${model}:begin -->"
+  eb="<!-- gpt-overlay:${role}:${model}:end -->"
+
+  exactly_once_fixed "$file" "$bb" "$file: overlay ${model} begin marker exactly once"
+  exactly_once_fixed "$file" "$eb" "$file: overlay ${model} end marker exactly once"
+  lb="$(line_of "$file" "$bb")"
+  le="$(line_of "$file" "$eb")"
+  if [[ -n "$lb" && -n "$le" && "$lb" -lt "$le" ]]; then
+    pass "$file: overlay ${model} markers ordered (begin line $lb, end line $le)"
+  else
+    fail "$file: overlay ${model} end marker missing or before begin (begin ${lb:-none}, end ${le:-none})"
+  fi
+
+  bytes_o="$(extract "$file" "$bb" "$eb" | wc -c | tr -d ' ')"
+  if [[ "$bytes_o" -eq 0 ]]; then
+    fail "$file: overlay ${model} body is empty"
+  fi
+  if (( bytes_b + bytes_o <= MAX_FIXED_PROMPT_BYTES )); then
+    pass "$file: ${role} baseline+overlay(${model}) ${bytes_b}+${bytes_o} bytes within ${MAX_FIXED_PROMPT_BYTES}"
+  else
+    fail "$file: ${role} baseline+overlay(${model}) ${bytes_b}+${bytes_o} bytes exceeds ${MAX_FIXED_PROMPT_BYTES}"
+  fi
+}
+
 # check_role_pack <role> <file> <config-key>
 # Verifies: baseline markers present exactly once, an overlay exists for the
-# configured default model, and composed baseline+overlay fits the byte cap.
+# configured default model, and every overlay present passes check_overlay.
 check_role_pack() {
   local role="$1" file="$2" key="$3"
-  local model bb eb bytes_b bytes_o
+  local model bytes_b m
 
   exactly_once_fixed "$file" "<!-- gpt-baseline:${role}:begin -->" \
     "$file: ${role} baseline begin marker exactly once"
   exactly_once_fixed "$file" "<!-- gpt-baseline:${role}:end -->" \
     "$file: ${role} baseline end marker exactly once"
 
+  bytes_b="$(extract "$file" "<!-- gpt-baseline:${role}:begin -->" \
+    "<!-- gpt-baseline:${role}:end -->" | wc -c | tr -d ' ')"
+  if [[ "$bytes_b" -eq 0 ]]; then
+    fail "$file: ${role} baseline body is empty"
+  fi
+
   model="$(model_for "$key")"
   if [[ -z "$model" ]]; then
     fail "$file: cannot resolve model for ${key}"
     return
   fi
+  exactly_once_fixed "$file" "<!-- gpt-overlay:${role}:${model}:begin -->" \
+    "$file: overlay for configured model ${model} present"
 
-  bb="<!-- gpt-overlay:${role}:${model}:begin -->"
-  eb="<!-- gpt-overlay:${role}:${model}:end -->"
-  exactly_once_fixed "$file" "$bb" "$file: overlay for ${model} present"
-
-  bytes_b="$(extract "$file" "<!-- gpt-baseline:${role}:begin -->" \
-    "<!-- gpt-baseline:${role}:end -->" | wc -c | tr -d ' ')"
-  bytes_o="$(extract "$file" "$bb" "$eb" | wc -c | tr -d ' ')"
-
-  if [[ "$bytes_b" -eq 0 ]]; then
-    fail "$file: ${role} baseline body is empty"
-  fi
-  if (( bytes_b + bytes_o <= MAX_FIXED_PROMPT_BYTES )); then
-    pass "$file: ${role} baseline+overlay ${bytes_b}+${bytes_o} bytes within ${MAX_FIXED_PROMPT_BYTES}"
-  else
-    fail "$file: ${role} baseline+overlay ${bytes_b}+${bytes_o} bytes exceeds ${MAX_FIXED_PROMPT_BYTES}"
-  fi
+  for m in $(overlay_models "$file" "$role"); do
+    check_overlay "$role" "$file" "$m" "$bytes_b"
+  done
 }
 
 check_ideation() {
@@ -92,6 +129,8 @@ check_ideation() {
     "SKILL.md: states 30KB hard boundary"
   contains skills/gpt-brainstorming/SKILL.md 'read-only' \
     "SKILL.md: read-only codex rule present"
+  contains skills/gpt-brainstorming/SKILL.md 'STOP and tell the user' \
+    "SKILL.md: stop-on-MCP-failure rule present"
 }
 
 check_review_agent() {
@@ -104,6 +143,10 @@ check_review_agent() {
     "codex-adversary: read-only rule present"
   contains agents/codex-adversary.md 'Never retry a timed-out payload unchanged' \
     "codex-adversary: unchanged-timeout prohibition present"
+  contains agents/codex-adversary.md 'report it and stop' \
+    "codex-adversary: stop-on-MCP-failure rule present"
+  contains agents/codex-adversary.md 'overlay model' \
+    "codex-adversary: names the overlay model the caller passes"
   contains agents/codex-adversary.md '## Verdict' \
     "codex-adversary: Verdict heading present"
   contains agents/codex-adversary.md '## Findings' \
@@ -127,6 +170,12 @@ check_second_opinion() {
   check_role_pack second-opinion commands/gpt-brainstorm.md second_opinion
   contains commands/gpt-brainstorm.md '--model' \
     "gpt-brainstorm: documents --model option"
+  contains commands/gpt-brainstorm.md '20KB' \
+    "gpt-brainstorm: states 20KB working budget"
+  contains commands/gpt-brainstorm.md '30KB' \
+    "gpt-brainstorm: states 30KB hard boundary"
+  contains commands/gpt-brainstorm.md 'read-only' \
+    "gpt-brainstorm: read-only codex rule present"
 }
 
 check_todo() {
@@ -147,11 +196,15 @@ check_todo() {
     fail "TODO.md: malformed prompt-variant entries: $bad"
   fi
 
-  dupes="$(grep '^- \[ \] prompt-variant' "$REPO/TODO.md" | sort | uniq -d)"
+  # A pair is a duplicate whether its entries are open or ticked, and
+  # regardless of trailing notes — the runtime's "skip if already present"
+  # rule keys on the role/model pair, not the whole line.
+  dupes="$(grep -E '^- \[[ x]\] prompt-variant:' "$REPO/TODO.md" \
+    | grep -Eo 'role=[^ ]+ model=[^ ]+' | sort | uniq -d)"
   if [[ -z "$dupes" ]]; then
-    pass "TODO.md: no duplicate role/model pairs"
+    pass "TODO.md: no duplicate role/model pairs (open or ticked)"
   else
-    fail "TODO.md: duplicate entries: $dupes"
+    fail "TODO.md: duplicate role/model pairs: $dupes"
   fi
 
   if grep -q 'TODO.md' "$REPO/managed-files.sh"; then
