@@ -61,6 +61,11 @@ overlay_models() {
     | sed -E 's/.*:([^:]*):begin -->/\1/' | sort -u
 }
 
+# Accepted debt (codex review, 2026-09-09): clauses shorter than this are
+# dropped, so short enumerated rule vocabulary ("resource leaks", "the
+# concrete failure", "impact and likelihood") can be repeated verbatim in an
+# overlay undetected. Lowering the floor risks false positives on generic
+# phrases. Revisit only if an overlay ever restates list vocabulary (LOW).
 MIN_CLAUSE_BYTES=25
 
 # normalise — one clause per line, applied identically to baseline and overlay.
