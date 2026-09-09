@@ -29,9 +29,9 @@ L1: 3056 + 256 + 4,608 = 7,920. L2: 3914 + 610 + 14,080 = 18,604.
 
 | Case | Lane | Checkpoint | Status | In/out bytes | Session | Evidence |
 |---|---|---|---|---|---|---|
-| F1 | fresh | F1-A | NOT RUN | | | |
-| F2 | fresh | F2-A | NOT RUN | | | |
-| F3 | fresh | F3-A | NOT RUN | | | |
+| F1 | fresh | F1-A | FAIL | 2041 / 270 | 01a08637-82fd-73a1-973e-cba4c207ffb5 | One question, but asks measurement-first-vs-caching-required strategy, not the cache target/slow operation. |
+| F2 | fresh | F2-A | PASS | 2494 / 1964 | 01a08638-b1dd-7cc1-8365-b4dbe6cc1873 | No clarification; 2 distinct approaches (dispatcher-owned vs dedicated module) with trade-offs, recommendation, all categories explicit. |
+| F3 | fresh | F3-A | PASS | 3278 / 2852 | 01a0863a-642f-7c00-a5ca-aff0d196cd35 | Straight to 3 approaches differing in interaction structure (inline/modal/panel); no question; recommendation; categories explicit; no architecture. |
 | L1 | live | L1-Q1 | NOT RUN | | | |
 | L1 | live | L1-Q2 | NOT RUN | | | |
 | L1 | live | L1-A | NOT RUN | | | |
@@ -277,11 +277,120 @@ END LIVE CHECKPOINT
 
 ## Judgements
 
-(one subsection per checkpoint, filled by the run: quoted evidence per Expected-paragraph element, verdict)
+### F1-A
+
+**(a) Structure — exactly one question and nothing else?**
+
+The full response is: "Should this work be **A) measurement-first**—benchmark representative CLI runs and require evidence of worthwhile speedup before committing to caching (recommended)—or **B) caching-required**—commit to caching now and use measurements only to choose what to cache?"
+
+This is a single sentence ending in one question mark, offering two named multiple-choice branches integral to that one question. There is no recap, no approaches, no design section, no implementation, and no approval claim. **Holds.**
+
+**(b) Content — does it name the cache target or the slow operation?**
+
+It does not. The question asks the human to choose between two *process strategies* — "measurement-first" (benchmark before committing to caching) versus "caching-required" (commit to caching now, use measurement only to pick what to cache) — neither of which names a candidate cache target (e.g. "the remote metadata fetch" or "local file scanning") or identifies which operation is slow. Per the Evaluation terms and the Expected paragraph, "[a] good question resolves the intended cache target or the slow operation that motivates caching," and this question resolves neither; it instead punts identification of the workload to a later benchmarking step. **Does not hold.**
+
+**Verdict: FAIL.** Structure passes but content does not name the cache target or slow operation, so both halves of the criterion are not satisfied. Per instructions, this FAIL is not softened even though the question is well-formed and free of invented bottlenecks or premature storage choices.
+
+### F2-A
+
+Expected — `F2-A`: proceeds directly to 2–3 genuinely distinct, viable approaches with trade-offs and a recommendation; no further clarification question; no implementation; no assumed approval; purpose, stated constraints, measurable outcomes, and a relevant risky assumption explicit; alternatives proportionate; runtime file reading and missing-file behavior preserved; no embedded build-time version offered as compliant.
+
+- **No clarification question:** the response opens with "**Purpose**" and proceeds straight into structured sections — no question mark anywhere in the text. Holds.
+- **2–3 distinct approaches with axis:** "1. **Dispatcher-owned handling — recommended.** Add a narrowly guarded branch that owns reading, output, diagnostics, and exit status." vs "2. **Dedicated version handler.** The dispatcher recognizes the invocation and delegates to a separate shell module owning the version operation." Two approaches, differing in *where responsibility lives* (inline in the dispatcher vs. a separate module) — matches the Expected paragraph's own example axis ("flag handled in the dispatcher vs a dedicated helper"), not merely a different primitive performing an identical step. Holds.
+- **Trade-offs and recommendation:** "This minimizes integration changes and packaging risk, at the cost of adding a small amount of file-handling logic to the dispatcher" vs "This separates routing from file handling, but introduces another component and loading dependency." Recommendation: "Recommend **Approach 1**: the behavior is small and has one caller, so a separate module offers little benefit." Holds.
+- **Purpose:** "Expose the installed `repo-tool` version through a predictable, script-friendly invocation." Holds.
+- **Constraints:** "Recognize `--version` only when it is the sole argument. ... Read the installation-root `VERSION` file at invocation time; no network access or cached version. ... Preserve all other CLI behavior and existing argument-behavior tests." Holds.
+- **Measurable success criteria:** "With `VERSION` present: stdout is exactly its version line followed by one newline, stderr is empty, and exit status is `0`. With `VERSION` missing: stdout is empty, stderr contains a diagnostic identifying the missing file, and exit status is `1`." Verifiable, holds.
+- **Risky assumption:** "The supplied single-line `VERSION` contract holds; malformed-file validation is outside this change." Relevant (continued packaging/format of `VERSION`), holds.
+- **Runtime read / missing-file behavior preserved, no embedded build-time version:** constraint explicitly says "Read the installation-root `VERSION` file at invocation time; no network access or cached version," and success criteria say "Changing `VERSION` between invocations changes the reported version" — this rules out an embedded build-time version and preserves the missing-file diagnostic/exit-1 contract. Holds.
+- **No implementation, no assumed approval:** the response ends "Neither approach is selected or approved yet," and contains no code or step-by-step implementation. Holds.
+
+**Verdict: PASS.** Every element of the Expected paragraph is satisfied with quoted evidence.
+
+### F3-A
+
+Expected — `F3-A`: proceeds directly to 2–3 approaches (no requirements question); approaches differ in interaction structure with consequences for navigation/focus/accessibility/complexity (widget/library substitutions fail distinctness); every approach preserves specified behavior including return-to-list state; a recommendation; purpose, constraints, verifiable success criteria (validation, persistence, failure, keyboard — not "easy to use"), risky assumptions quoted; no architecture; no assumed selection/approval (a closing selection question is permitted).
+
+- **No requirements question, straight to approaches:** the response opens "**Purpose**" then "**Approaches**" with no question mark or clarification request anywhere. Holds.
+- **2–3 approaches differing in interaction structure:** "1. **Row-owned inline editor.**" (in-list), "2. **List-owned modal dialog — recommended.**" (modal), "3. **List-owned nonmodal editing panel.**" (dedicated persistent view) — three approaches matching the Expected paragraph's own example set (in-list vs modal vs dedicated view) rather than a widget/library substitution. Holds.
+- **Consequences for navigation/focus/accessibility/complexity:** approach 1 — "introduces row-layout changes and requires coordination to prevent simultaneous editors"; approach 2 — "Requires managed focus, background inertness, and pending-aware dismissal"; approach 3 — "requires rules for switching targets with an unsaved draft and more complex keyboard navigation." Each names concrete structural/focus/complexity consequences. Holds.
+- **Every approach preserves specified behavior incl. return-to-list state:** the shared Constraints section (applying to all approaches, since none is described as an exception) states "Every successful, unchanged, or cancelled exit restores selection, scroll, and Rename-control focus." No approach description contradicts this. Holds.
+- **Recommendation:** "**Recommendation** Choose **2: the list-owned modal dialog** for its explicit single-item lifecycle and limited interaction rules." Holds.
+- **Purpose:** "Rename one saved item without losing the user's place in the list or losing a draft after validation or API failure." Holds.
+- **Constraints:** e.g. "Invalid input retains its draft and exposes a field-associated error; no request. ... A changed valid name makes one request per submission; repeated submission and cancellation are blocked while pending." Holds.
+- **Verifiable success criteria covering validation, persistence, failure, keyboard:** "Boundary tests accept 1 and 80 code points and reject 0 and 81 after trimming" (validation); "Exactly one request for each accepted changed-name submission" (persistence path via the rename API); "Failure retains the exact draft; all specified exits restore the captured list context" (failure); "The entire interaction works without a pointer, with announced errors and observable focus restoration" (keyboard). None of this reduces to "easy to use." Holds.
+- **Risky assumptions quoted:** "Proposed interpretation: normalization means trimming only, with case-sensitive comparison against the trimmed original name—not case folding or Unicode canonicalization." and "Reused UI controls must not be assumed to block implicit dismissal while pending or restore focus without changing scroll; both require verification." Holds.
+- **No architecture, no assumed selection/approval:** the response closes "No approach or design section is approved yet," and contains no architecture draft (no components/data-flow/error-handling/testing language). No closing selection question is asked, but the Expected paragraph only *permits* one, it does not require it. Holds.
+
+**Verdict: PASS.** Every element of the Expected paragraph is satisfied with quoted evidence.
 
 ## Raw outputs
 
-(one subsection per response, assistant text verbatim, with lane label and session id)
+### F1 (fresh, session 01a08637-82fd-73a1-973e-cba4c207ffb5)
+
+Should this work be **A) measurement-first**—benchmark representative CLI runs and require evidence of worthwhile speedup before committing to caching (recommended)—or **B) caching-required**—commit to caching now and use measurements only to choose what to cache?
+
+### F2 (fresh, session 01a08638-b1dd-7cc1-8365-b4dbe6cc1873)
+
+**Purpose**
+Expose the installed `repo-tool` version through a predictable, script-friendly invocation.
+
+**Constraints**
+- Recognize `--version` only when it is the sole argument.
+- Read the installation-root `VERSION` file at invocation time; no network access or cached version.
+- Preserve all other CLI behavior and existing argument-behavior tests.
+- Treat version content as literal text, never executable shell content.
+
+**Measurable Success Criteria**
+- With `VERSION` present: stdout is exactly its version line followed by one newline, stderr is empty, and exit status is `0`.
+- With `VERSION` missing: stdout is empty, stderr contains a diagnostic identifying the missing file, and exit status is `1`.
+- Changing `VERSION` between invocations changes the reported version.
+- Existing argument-behavior tests pass unchanged; invocations combining `--version` with other arguments retain their previous behavior.
+
+**Risky Assumptions**
+- The supplied single-line `VERSION` contract holds; malformed-file validation is outside this change.
+- The existing dispatcher can recognize the exact invocation without disturbing other argument handling.
+- Tests can use isolated installation fixtures rather than modifying the actual installed `VERSION`.
+
+**Approaches**
+1. **Dispatcher-owned handling — recommended.** Add a narrowly guarded branch that owns reading, output, diagnostics, and exit status. This minimizes integration changes and packaging risk, at the cost of adding a small amount of file-handling logic to the dispatcher.
+2. **Dedicated version handler.** The dispatcher recognizes the invocation and delegates to a separate shell module owning the version operation. This separates routing from file handling, but introduces another component and loading dependency for a small feature.
+
+Recommend **Approach 1**: the behavior is small and has one caller, so a separate module offers little benefit. Neither approach is selected or approved yet.
+
+### F3 (fresh, session 01a0863a-642f-7c00-a5ca-aff0d196cd35)
+
+**Purpose**
+Rename one saved item without losing the user's place in the list or losing a draft after validation or API failure.
+
+**Approaches**
+1. **Row-owned inline editor.** Replace the item's name with a field and Save/Cancel controls; the row owns editing state. Keeps editing directly in context, but introduces row-layout changes and requires coordination to prevent simultaneous editors.
+2. **List-owned modal dialog — recommended.** Each Rename control opens one shared dialog; the list owns the target ID, editing session, and restoration context. Makes one active rename explicit and isolates drafts from row rendering. Requires managed focus, background inertness, and pending-aware dismissal.
+3. **List-owned nonmodal editing panel.** Show a persistent side panel while retaining access to the list. Provides more room and continued list inspection, but requires rules for switching targets with an unsaved draft and more complex keyboard navigation.
+
+**Constraints**
+- Use stable IDs and the existing rename API; allow duplicate names.
+- Initialize the field with the current name. Trim before validation; accept only 1–80 Unicode code points.
+- Invalid input retains its draft and exposes a field-associated error; no request.
+- An unchanged normalized name closes editing without a request.
+- A changed valid name makes one request per submission; repeated submission and cancellation are blocked while pending.
+- Success updates the displayed name and closes editing. Failure preserves the draft, announces an accessible error, and enables retry or cancellation.
+- Cancel or Escape discards the draft only when idle. Every successful, unchanged, or cancelled exit restores selection, scroll, and Rename-control focus.
+- Keyboard accessibility is required. Bulk rename, undo, and persistence changes are excluded.
+
+**Measurable Success Criteria**
+- Exactly zero requests for invalid, unchanged, or cancelled edits.
+- Exactly one request for each accepted changed-name submission, including under rapid repeated activation.
+- Boundary tests accept 1 and 80 code points and reject 0 and 81 after trimming.
+- Failure retains the exact draft; all specified exits restore the captured list context.
+- The entire interaction works without a pointer, with announced errors and observable focus restoration.
+
+**Risky Assumptions**
+- Proposed interpretation: normalization means trimming only, with case-sensitive comparison against the trimmed original name—not case folding or Unicode canonicalization.
+- Reused UI controls must not be assumed to block implicit dismissal while pending or restore focus without changing scroll; both require verification.
+
+**Recommendation**
+Choose **2: the list-owned modal dialog** for its explicit single-item lifecycle and limited interaction rules. No approach or design section is approved yet.
 
 ## Acceptance
 
