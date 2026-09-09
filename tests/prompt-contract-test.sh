@@ -15,16 +15,18 @@ pass() { echo "  ok       $1"; }
 fail() { echo "  FAIL     $1"; FAIL=1; }
 
 # exactly_once <file> <extended-regex> <label>
+# Counts occurrences, not lines (grep -c would miss a marker pasted twice on
+# one line).
 exactly_once() {
   local n
-  n="$(grep -Ec "$2" "$REPO/$1" 2>/dev/null || true)"
+  n="$(grep -Eo -e "$2" "$REPO/$1" 2>/dev/null | wc -l | tr -d ' ')"
   if [[ "$n" == "1" ]]; then pass "$3"; else fail "$3 (found $n, want 1)"; fi
 }
 
 # exactly_once_fixed <file> <fixed-string> <label> — literal match, for markers
 exactly_once_fixed() {
   local n
-  n="$(grep -Fc -e "$2" "$REPO/$1" 2>/dev/null || true)"
+  n="$(grep -Fo -e "$2" "$REPO/$1" 2>/dev/null | wc -l | tr -d ' ')"
   if [[ "$n" == "1" ]]; then pass "$3"; else fail "$3 (found $n, want 1)"; fi
 }
 
@@ -116,9 +118,15 @@ check_role_pack() {
   exactly_once_fixed "$file" "<!-- gpt-overlay:${role}:${model}:begin -->" \
     "$file: overlay for configured model ${model} present"
 
-  for m in $(overlay_models "$file" "$role"); do
+  # read -r, not word-splitting: an empty model segment must fail loudly
+  # rather than vanish from the loop, and ids are never split on spaces.
+  while IFS= read -r m; do
+    if [[ -z "$m" ]]; then
+      fail "$file: ${role} overlay marker with an empty model id"
+      continue
+    fi
     check_overlay "$role" "$file" "$m" "$bytes_b"
-  done
+  done < <(overlay_models "$file" "$role")
 }
 
 check_ideation() {
@@ -199,8 +207,8 @@ check_todo() {
   # A pair is a duplicate whether its entries are open or ticked, and
   # regardless of trailing notes — the runtime's "skip if already present"
   # rule keys on the role/model pair, not the whole line.
-  dupes="$(grep -E '^- \[[ x]\] prompt-variant:' "$REPO/TODO.md" \
-    | grep -Eo 'role=[^ ]+ model=[^ ]+' | sort | uniq -d)"
+  dupes="$(grep -Eo '^- \[[ x]\] prompt-variant: role=[^ ]+ model=[^ ]+' "$REPO/TODO.md" \
+    | sed -E 's/^- \[[ x]\] prompt-variant: //' | sort | uniq -d)"
   if [[ -z "$dupes" ]]; then
     pass "TODO.md: no duplicate role/model pairs (open or ticked)"
   else
