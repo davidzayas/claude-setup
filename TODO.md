@@ -31,6 +31,10 @@ role/model pair:
       future codex upgrade.
 - [x] test-hardening: contract guard that agents/codex-adversary.md mentions "overlay model" (guards the caller/agent seam the 2026-08-14 final review caught) — done 2026-09-09 (check_review_agent)
 
+## Accepted debt from codex review (2026-09-09, overlay guardrail)
+
+- [ ] guardrail-floor: check_no_restatement drops baseline clauses under 25 bytes, so short enumerated rule vocabulary ("resource leaks", "the concrete failure", "impact and likelihood") can be repeated verbatim in an overlay undetected; lowering the floor risks false positives on generic phrases — revisit if an overlay ever restates list vocabulary (LOW)
+
 ## Follow-ups from final branch review (2026-09-09)
 
 - [x] fixture: correct the L2 case-inventory row in tests/smoke-fixtures/ideation-gpt-6-astra-cases.md ("all five design sections" → ends after data flow) at the next campaign's freeze; the file is hash-frozen for campaign 2 — won't-fix 2026-09-09: no third smoke campaign is planned; the fixture is a historical record (campaign-2 identity = commit faf3619) and docs/prompt-smoke-2026-09-09-gpt-6-astra-ideation.md holds the correction, the overrun figures, and the scope note. If a campaign is ever run, start from the spec's "Post-campaign clarifications" and the report's Incidents/Acceptance notes.

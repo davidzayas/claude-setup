@@ -63,14 +63,18 @@ overlay_models() {
 
 MIN_CLAUSE_BYTES=25
 
-# normalise — one clause per line. Lines are joined first (so a copy wrapped
-# differently still lines up), then '.', ':', ';', '?' and markdown bullet
-# separators end a clause ("e.g."/"i.e." protected); whitespace collapsed;
-# clauses shorter than MIN_CLAUSE_BYTES dropped. Applied identically to
-# baseline and overlay.
+# normalise — one clause per line, applied identically to baseline and overlay.
+# Paragraph breaks and template slots ({intent}, {idea}, …) become boundaries
+# before the lines are joined (a copy wrapped differently still lines up, but
+# a slot or blank line can no longer glue itself onto the rule that follows);
+# then '.', ':', ';', '?' and markdown bullet separators end a clause
+# ("e.g."/"i.e." collapsed to "eg"/"ie" first — BSD sed has no \b); leading
+# and trailing punctuation is stripped; clauses under MIN_CLAUSE_BYTES dropped.
 normalise() {
-  tr '\n' ' ' | sed -E 's/\b([eEiI])\.([gGeE])\. /\1.\2./g; s/ - /\n/g; s/[.:;?]+/\n/g' \
-    | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//; s/[[:space:]]+/ /g' \
+  sed -E 's/^[[:space:]]*$/@@/; s/\{[^}]*\}/@@/g' | tr '\n' ' ' \
+    | sed -E 's/([^[:alnum:]]|^)[eE]\.[gG]\./\1eg/g; s/([^[:alnum:]]|^)[iI]\.[eE]\./\1ie/g' \
+    | sed -E 's/@@/\n/g; s/ - /\n/g; s/[.:;?]+/\n/g' \
+    | sed -E 's/^[^[:alnum:]]+//; s/[^[:alnum:]]+$//; s/[[:space:]]+/ /g' \
     | awk -v min="$MIN_CLAUSE_BYTES" 'length($0) >= min'
 }
 

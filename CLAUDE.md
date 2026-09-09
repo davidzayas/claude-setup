@@ -88,5 +88,6 @@ boundaries, read-only review, the payload budgets (≤20KB working per codex
 session, 30KB hard danger boundary), output contracts, or
 stop-on-MCP-failure behavior. An overlay may emphasise a baseline rule only
 when a recorded smoke or review failure names it, and must not restate the
-rule's content — the contract test rejects any baseline clause repeated
-verbatim in an overlay.
+rule's content — the contract test rejects any baseline clause it extracts
+(25 bytes or longer) that an overlay repeats verbatim; paraphrase is a
+review matter, not a mechanical one.
