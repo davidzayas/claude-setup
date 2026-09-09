@@ -11,7 +11,7 @@ role/model pair:
 
 `- [ ] prompt-variant: role=<ideation|second-opinion|review> model=<exact-model-id>`
 
-(none yet)
+- [x] prompt-variant: role=ideation model=gpt-6-astra — done 2026-09-08: overlay added (this plan, Task 1)
 
 ## Follow-ups from final branch review (2026-08-10)
 
@@ -20,7 +20,7 @@ role/model pair:
 - [ ] test-hardening: measure byte cap for every overlay present, not just the configured default
 - [ ] test-hardening: TODO dupe check is exact-line only ("- [x]" variant escapes it)
 - [ ] test-hardening: stop-on-MCP-failure string checked only in CLAUDE.md, not SKILL.md/codex-adversary.md
-- [ ] prompt-tuning: align the ideation overlay's skip-clarification trigger with the baseline's required categories (purpose, constraints, success criteria, risky assumptions) and rerun the ideation smoke cases (adversarial-review finding, accepted debt)
+- [ ] prompt-tuning: align the ideation overlay's skip-clarification trigger with the baseline's required categories (purpose, constraints, success criteria, risky assumptions) and rerun the ideation smoke cases (adversarial-review finding, accepted debt) — done for `gpt-6-astra` (2026-09-08, this migration, smoke round 2); still open for the retained `gpt-5.6-sol` overlay
 
 ## Version pins
 

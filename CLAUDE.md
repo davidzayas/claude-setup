@@ -30,9 +30,9 @@ free-text model mentions inside their arguments are not overrides. The
 "named in the invocation" rule applies to skill invocations (e.g.
 "brainstorm X with o3-pro" via the gpt-brainstorming skill).
 
-gpt_brainstorm_model: gpt-5.6-sol
-gpt_second_opinion_model: gpt-5.6-sol
-gpt_review_model: gpt-5.6-sol
+gpt_brainstorm_model: gpt-6-astra
+gpt_second_opinion_model: gpt-6-astra
+gpt_review_model: gpt-6-astra
 
 When the Codex provider is Azure OpenAI, every model value above — and any
 explicit override — is the Azure DEPLOYMENT NAME, because that is what the
