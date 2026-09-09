@@ -321,7 +321,7 @@ These clarifications are prospective additions for the next fixture freeze; they
 
   Provenance: `docs/prompt-smoke-2026-09-09-gpt-6-astra-ideation.md` — campaign 2 checkpoints L2-COMP-R, L2-FLOW, and H3 accepted implicit stops; campaign 1 H3 also accepted the absence of an explicit verification request.
 
-- **Components/error-handling boundary:** Interface payloads and state ownership, including temporary-state lifetime, are components content; failure outcomes and adapter failure guarantees are error-handling content. References needed to explain the current section are allowed; separately developing a later section is not.
+- **Components/error-handling boundary:** Interface payloads and state ownership, including temporary-state lifetime, are components content; failure outcomes and adapter failure guarantees are error-handling content. The same one-section restriction as "One design section" above applies.
 
   Provenance: `docs/prompt-smoke-2026-09-09-gpt-6-astra-ideation.md` — campaign 1 H3 distinguished failure guarantees from components content; campaign 2 H3 accepted interface payloads and state lifetime as components content. Both required review adjudication.
 
