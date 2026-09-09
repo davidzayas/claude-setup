@@ -19,8 +19,8 @@ written before any call was made.
 | 1 | ideation | ambiguous feature | 2031 / 228 | yes (after fix) | Rerun 2 (round-2 overlay fix). Exactly one question, nothing else: "Should we (A) measure representative CLI runs first and pursue caching only if reusable work causes meaningful delays (recommended), or (B) treat caching as required and use measurements only to choose what to cache?" One decision-focused, multiple-choice question resolving whether/how to justify caching before designing it; no recap, approaches, design content, implementation, or approval claim. |
 | 2 | ideation | near-complete requirements | 2484 / 1772 | yes (after fix) | Rerun 2 (round-2 overlay fix). No clarifying question; goes straight to explicit **Purpose** ("Expose the installed `repo-tool` version through a predictable, script-friendly `repo-tool --version` invocation"), **Constraints** (4 bullets, incl. "No network access or cached version value"), **Measurable Success Criteria** (4 bullets: exact stdout bytes/newline, exit 0; missing-file stderr/empty-stdout/exit 1; version changes across invocations; tests pass), and a **Risky Assumption** ("Startup before dispatch does not emit output or terminate in a way that prevents the required version outcomes"). Two genuinely distinct architectural approaches — "Dispatcher-owned behavior" vs "Dedicated version handler" — with trade-offs and a recommendation (approach 1). Runtime `VERSION` read at invocation time and missing-file behavior both preserved. No implementation; ends "Neither approach nor any design section is approved yet." All previously-missing required-explicit content now present; see Fix round 2 notes. |
 | 3 | second-opinion | JSON-vs-SQLite (two phases) | 1586+886 / 3468+2027 | yes | Recommendation: SQLite, via `BEGIN IMMEDIATE` read-modify-write transactions (coordinated, not atomic-replacement-only); serious alternative offered was per-user JSON with a persistent-lock-file cooperative protocol. Phase two returned 3 `BLOCKER` + 1 `TRADE-OFF`, each with a stated consequence. Hazard (a) (early `migration_complete=true` commit + crash before imports finish) surfaced in phase two, BLOCKER 1. Hazard (b) (skip-unparseable-then-delete loses never-migrated data) surfaced in phase two, BLOCKER 2. No concurrent legacy writers were invented (BLOCKER 3 concerns a newly launched process during migration, not the stopped legacy writers). |
-| 4 | review | seeded defects | | | |
-| 5 | review | clean fixture | | | |
+| 4 | review | seeded defects | 2687 / 1160 | yes | Both seeded defects found: blank-line/empty-file `ValueError` at line 16 (MEDIUM) with trigger sequence and a fix that skips blank lines before unpacking; oversized-`n` slice at line 7 (MEDIUM) with a fix (`items[max(0, len(items) - n):]`) that explicitly preserves `n == 0` behavior. No false findings: no `n == 0` "returns whole list" claim, no `itertools`/type-hint style bait, no impact-"None" or comment-only fix, no unsupported `with`-leak claim. Structure: CRITICAL, HIGH, MEDIUM, LOW in order; `None found.` under each empty section; every finding has file:line, failure, trigger, impact/likelihood, minimal fix. |
+| 5 | review | clean fixture | 2424 / 87 | yes | No invented defects; CRITICAL, HIGH, MEDIUM, LOW in order, each exactly `None found.`; no deferred-generator-validation or out-of-domain defensive-suggestion findings. |
 
 ## Failures and adjustments
 
@@ -108,6 +108,8 @@ implementation or assumed approval appears. No further overlay change was
 needed.
 
 Case 3: no failure; second-opinion overlay unchanged.
+
+Cases 4–5: no failure; review overlay unchanged.
 
 ## Inputs
 
@@ -411,3 +413,40 @@ Keep the migration small: one row per user containing the existing JSON document
 - **BLOCKER — Startup exclusion is unspecified.** Stopping existing processes does not establish what happens when another CLI starts during import. Under the stated marker rule, that newcomer can treat the incomplete database as ready and read missing settings or write values that conflict with subsequent imports. Unless startup is also excluded, require a migration gate that every newly launched process checks and that remains effective until verified completion.
 
 - **TRADE-OFF — “Effectively free” excludes the work needed to make this safe.** The estimate needs to include tests for interruption at commit boundaries, malformed inputs, failed writes, restart behavior, and cleanup eligibility. Per-user transactions are not inherently wrong, but choosing them requires a recovery protocol rather than simply moving the marker to the end. The practical consequence is a real implementation and verification budget, not merely an import loop.
+
+### Case 4 — review, seeded defects (session 01a0837b-bded-7cc2-8040-e72738a566ed)
+
+## CRITICAL
+None found.
+
+## HIGH
+None found.
+
+## MEDIUM
+
+### `tests/smoke-fixtures/defect.py:16` — Valid blank lines abort configuration loading
+- **Failure sequence:** Read a file containing `KEY=VALUE\n`. Splitting on `"\n"` produces an empty final line; splitting that line on `"="` returns one field, so unpacking raises `ValueError`. Empty files and blank or whitespace-only lines trigger the same failure.
+- **Impact and likelihood:** No configuration is returned for valid inputs. Failure is deterministic, including for the common trailing-newline case.
+- **Minimal fix:** Before unpacking, skip lines where `not line.strip()`.
+
+### `tests/smoke-fixtures/defect.py:7` — Oversized requests silently omit available items
+- **Failure sequence:** Call `last_n([1, 2, 3], 4)`. The start index becomes `3 - 4 = -1`, so slicing returns `[3]` instead of `[1, 2, 3]`.
+- **Impact and likelihood:** Valid requests silently return incomplete results. Failure occurs whenever `len(items) < n < 2 * len(items)`.
+- **Minimal fix:** Clamp the start index: `return items[max(0, len(items) - n):]`. This also preserves the required zero behavior.
+
+## LOW
+None found.
+
+### Case 5 — review, clean fixture (session 01a0837d-e7ae-70d0-a5e3-3b7f91413ce4)
+
+## CRITICAL
+None found.
+
+## HIGH
+None found.
+
+## MEDIUM
+None found.
+
+## LOW
+None found.
