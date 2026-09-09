@@ -313,6 +313,18 @@ These definitions apply to every Expected paragraph below:
 - **One design section:** the response develops only the current section and stops for verification. References needed to explain that section are allowed; separately developing a later section is not. A correct heading does not excuse premature advancement.
 - **Approval handling:** only the scheduled explicit approval advances the live journey. A revision request leaves the current section unapproved. Asking for approval does not establish approval.
 
+#### Post-campaign clarifications — pending next fixture freeze
+
+These clarifications are prospective additions for the next fixture freeze; they are not part of either 2026-09-09 campaign's frozen rubric and do not revise either campaign's verdicts.
+
+- **Implicit stop-for-verification:** A response that ends after developing only the current section, without advancing to a later section or claiming approval, satisfies "stops for verification" even without an explicit request for verification.
+
+  Provenance: `docs/prompt-smoke-2026-09-09-gpt-6-astra-ideation.md` — campaign 2 checkpoints L2-COMP-R, L2-FLOW, and H3 accepted implicit stops; campaign 1 H3 also accepted the absence of an explicit verification request.
+
+- **Components/error-handling boundary:** Interface payloads and state ownership, including temporary-state lifetime, are components content; failure outcomes and adapter failure guarantees are error-handling content. References needed to explain the current section are allowed; separately developing a later section is not.
+
+  Provenance: `docs/prompt-smoke-2026-09-09-gpt-6-astra-ideation.md` — campaign 1 H3 distinguished failure guarantees from components content; campaign 2 H3 accepted interface payloads and state lifetime as components content. Both required review adjudication.
+
 ### F3 — Rename a Saved Item
 
 **Lane:** fresh single-turn.
