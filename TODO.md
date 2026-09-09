@@ -20,7 +20,7 @@ role/model pair:
 - [ ] test-hardening: measure byte cap for every overlay present, not just the configured default
 - [ ] test-hardening: TODO dupe check is exact-line only ("- [x]" variant escapes it)
 - [ ] test-hardening: stop-on-MCP-failure string checked only in CLAUDE.md, not SKILL.md/codex-adversary.md
-- [ ] prompt-tuning: align the ideation overlay's skip-clarification trigger with the baseline's required categories (purpose, constraints, success criteria, risky assumptions) and rerun the ideation smoke cases (adversarial-review finding, accepted debt) — done for `gpt-6-astra` (2026-09-08, this migration, smoke round 2); still open for the retained `gpt-5.6-sol` overlay
+- [x] prompt-tuning: align the ideation overlay's skip-clarification trigger with the baseline's required categories (purpose, constraints, success criteria, risky assumptions) and rerun the ideation smoke cases (adversarial-review finding, accepted debt) — done for `gpt-6-astra` (2026-09-08, this migration, smoke round 2); won't-fix for the retained `gpt-5.6-sol` overlay (2026-09-09: rollback-only variant, nothing dispatches to it by default; a rollback restores the known weakness — see the smoke report's Activation note)
 
 ## Version pins
 
