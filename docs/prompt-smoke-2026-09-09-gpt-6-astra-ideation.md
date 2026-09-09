@@ -35,14 +35,14 @@ L1: 3056 + 256 + 4,608 = 7,920. L2: 3914 + 610 + 14,080 = 18,604.
 | L1 | live | L1-Q1 | PASS | 3056 / 154 | 01a08648-64cf-7f81-8811-6a251f6e1906 | Exactly one question (A: abort entire import vs. B: reject-and-continue) addressing D_INVALID only; no recap, no approaches, no mention of D_DUPLICATE. |
 | L1 | live | L1-Q2 | PASS | 143 / 182 | 01a08648-64cf-7f81-8811-6a251f6e1906 | Exactly one question about the other unresolved fact (D_DUPLICATE: skip-vs-update on email match); first answer not reopened or recapped. |
 | L1 | live | L1-A | PASS | 113 / 2310 | 01a08648-64cf-7f81-8811-6a251f6e1906 | No clarification; 2 distinct approaches (application-service orchestration vs. UI-controller orchestration) differing in orchestration ownership; both preserve skip-existing/reject-invalid, normalized identity, rollback, and reporting; all categories explicit; checkable success criteria; no reopened facts, no architecture. |
-| L2 | live | L2-A | NOT RUN | | | |
-| L2 | live | L2-ARCH | NOT RUN | | | |
-| L2 | live | L2-COMP | NOT RUN | | | |
-| L2 | live | L2-COMP-R | NOT RUN | | | |
-| L2 | live | L2-FLOW | NOT RUN | | | |
-| L2 | live | L2-ERROR | NOT RUN | | | |
-| L2 | live | L2-TEST | NOT RUN | | | |
-| L2 | live | L2-DONE | NOT RUN | | | |
+| L2 | live | L2-A | PASS | 3914 / 3100 | 01a08654-1eda-7750-8076-436b5c71ddde | Straight to 3 approaches differing in responsibility (pure generator + existing handler vs. dedicated service vs. monolithic handler); trade-offs; one clear recommendation ("Pure digest generator; existing handler coordinates — recommended"); all categories explicit; no design section. |
+| L2 | live | L2-ARCH | PASS | 35 / 1487 | 01a08654-1eda-7750-8076-436b5c71ddde | Identifies selected approach; architecture-only boundaries (activation/deterministic/publication/failure/state-lifetime); no components/data-flow/error/testing section; stops for verification, no assumed approval. |
+| L2 | live | L2-COMP | PASS | 22 / 1939 | 01a08654-1eda-7750-8076-436b5c71ddde | Advances exactly once to 5 named components consistent with the approved architecture; dedup and text-formatting ownership identifiable in the generator; no data-flow/later section; stops for verification. |
+| L2 | live | L2-COMP-R | PASS | 392 / 3080 | 01a08654-1eda-7750-8076-436b5c71ddde | Same 5 component names/count/ownership, now with explicit responsibility/input/output/side-effects fields; dedup and formatting ownership explicit; no drift in product rules; does not advance to data flow. |
+| L2 | live | L2-FLOW | PASS | 20 / 2150 | 01a08654-1eda-7750-8076-436b5c71ddde | Advances exactly once to data flow; explicit global dedup (step 2) before grouping (step 3); handles empty snapshot; atomic publish with no partial digest exposed; stops for verification. |
+| L2 | live | L2-ERROR | PASS | 19 / 2055 | 01a08654-1eda-7750-8076-436b5c71ddde | Advances exactly once to error handling; covers read/transform/publish failure boundaries; no invented malformed-input handling; explicitly treats empty-snapshot output as normal, not a failure substitute; no retries/background work. |
+| L2 | live | L2-TEST | BLOCKED (budget) | | 01a08654-1eda-7750-8076-436b5c71ddde | Budget gate STOP before the continuation-6 dispatch (message 6, targeting `L2-TEST`); projection 18,213 + 24 + 2,304 = 20,541 > 20,000. No call was made. |
+| L2 | live | L2-DONE | NOT RUN | | | Not reached — journey ended at the `L2-TEST` gate STOP. |
 | H1 | supplied-history | H1 | NOT RUN | | | |
 | H2 | supplied-history | H2 | NOT RUN | | | |
 | H3 | supplied-history | H3 | NOT RUN | | | |
@@ -51,7 +51,8 @@ Aggregate: NOT RUN.
 
 ## Incidents, adjustments, and overlay revisions
 
-(none yet)
+- **L2 budget-gate STOP (round 1).** Before dispatching continuation 6 (`L2-msg6.txt`, exact text `Error handling approved.`, allowance 2,304, which would have targeted checkpoint `L2-TEST`), the gate projected `accumulated 18,213 + proposed 24 + allowance 2,304 = 20,541`, which exceeds the 20,000-byte budget. Per the frozen gate policy, the call was not made. `L2-TEST` is recorded as `BLOCKED (budget)` and `L2-DONE` as `NOT RUN`; the L2 journey ends at this point. This is not worked around (no truncation, no allowance shrinking, no reseed) — the accumulated total through the last completed checkpoint (`L2-ERROR`) is 18,213 bytes.
+- **L2 allowance overruns (informational only, not failures).** Five of the six live responses exceeded their reserved next-response allowance, each reducing remaining headroom faster than planned: `L2-A` response 3,100 bytes vs. 3,072 allowance (+28); `L2-COMP` response 1,939 bytes vs. 1,792 allowance (+147); `L2-COMP-R` response 3,080 bytes vs. 2,048 allowance (+1,032); `L2-FLOW` response 2,150 bytes vs. 1,536 allowance (+614); `L2-ERROR` response 2,055 bytes vs. 1,536 allowance (+519). Only `L2-ARCH` (1,487 bytes vs. 1,536 allowance) stayed within its reservation. The cumulative overrun (2,340 bytes beyond planned reservations) is the proximate cause of the budget-gate STOP above.
 
 ## Composed prompts (round 1)
 
@@ -277,6 +278,13 @@ END LIVE CHECKPOINT
 ### L2
 | Step | Dispatched (bytes) | Returned (bytes) | Accumulated | Rule / message | Gate check before dispatch |
 |---|---|---|---|---|---|
+| 1 (seed) | 3914 | 3100 | 7014 | seed → `L2-A` | gate: 0 + 3914 + 3072 = 6986 -> OK (response exceeded its 3,072 allowance by 28 bytes) |
+| 2 (continuation 1) | 35 | 1487 | 8536 | message 1 → `I select your recommended approach.` → `L2-ARCH` | gate: 7014 + 35 + 1536 = 8585 -> OK |
+| 3 (continuation 2) | 22 | 1939 | 10497 | message 2 → `Architecture approved.` → `L2-COMP` | gate: 8536 + 22 + 1792 = 10350 -> OK (response exceeded its 1,792 allowance by 147 bytes) |
+| 4 (continuation 3) | 392 | 3080 | 13969 | message 3 → components-revision message (verbatim from fixture) → `L2-COMP-R` | gate: 10497 + 392 + 2048 = 12937 -> OK (response exceeded its 2,048 allowance by 1,032 bytes) |
+| 5 (continuation 4) | 20 | 2150 | 16139 | message 4 → `Components approved.` → `L2-FLOW` | gate: 13969 + 20 + 1536 = 15525 -> OK (response exceeded its 1,536 allowance by 614 bytes) |
+| 6 (continuation 5) | 19 | 2055 | 18213 | message 5 → `Data flow approved.` → `L2-ERROR` | gate: 16139 + 19 + 1536 = 17694 -> OK (response exceeded its 1,536 allowance by 519 bytes) |
+| 7 (continuation 6, not dispatched) | — | — | 18213 (unchanged) | message 6 → `Error handling approved.` → would have targeted `L2-TEST` | gate: 18213 + 24 + 2304 = 20541 -> STOP; call not made, checkpoint `L2-TEST` = `BLOCKED (budget)` |
 
 ## Judgements
 
@@ -368,6 +376,108 @@ Expected — `L1-A`: after the second fixed answer, clarification stops; 2–3 s
 - **No reopened facts, no architecture, no assumed selection:** neither `D_DUPLICATE` nor `D_INVALID` is questioned or reversed (both appear only as settled constraints); no components/data-flow/error-handling/testing draft appears; the response closes "Approach selection and design approval remain with Claude and the human," making no claim of selection or approval. No closing approach-selection question is asked, which the Expected paragraph only permits, not requires. Holds.
 
 **Verdict: PASS.** Every element of the Expected paragraph is satisfied with quoted evidence.
+
+### L2-A
+
+Expected — `L2-A`: goes directly to 2–3 substantively distinct approaches without a clarification turn; alternatives materially differ in responsibility or representation (not merely sort/group/container primitive); each preserves the complete external contract; trade-offs; one clearly recommended approach; purpose, constraints, measurable success criteria, and risky assumptions explicit, including deterministic output, correct duplicate/group/order behavior, unchanged source data, and atomic publication; no forbidden persistence/networking/scheduling/background work; no design section or presumed approval.
+
+- **No clarification turn:** the response opens with "**Purpose**" and contains no question mark until the closing recommendation sentence, which is a statement, not a question. Holds.
+- **2–3 approaches differing in responsibility, not primitive:** "1. **Pure digest generator; existing handler coordinates — recommended.** A side-effect-free generator transforms the snapshot into complete text. The Generate handler owns the read, publication, and error boundary." vs. "2. **Dedicated generation service owns the activation.** The handler delegates to a service that owns all three adapters and the complete operation." vs. "3. **Implement everything in the existing Generate handler.** Reading, transformation, rendering, and publication remain together." These differ in *where responsibility is owned* — split pure-function/handler, a single invocation-scoped service, or one undivided handler — matching the fixture's own example axis (invocation-scoped digest model vs. explicit transformation stages), not which sort/group primitive executes the same organization. Holds.
+- **Complete external contract preserved:** none of the three approach descriptions modifies the shared Purpose/Constraints/Success-Criteria text that precedes them; each only reassigns which component performs the same reading/transformation/publication/error work. Holds.
+- **Trade-offs:** approach 1 — "supports focused tests with minimal new structure"; approach 2 — "centralizes the workflow and its failure contract, but adds an abstraction and adapter wiring for a single entry point"; approach 3 — "couples formatting rules to UI orchestration and makes isolated correctness testing harder." Each names a clarity/testability/complexity consequence. Holds.
+- **One clear recommendation:** "**Recommendation:** Approach 1 provides the clearest correctness boundary without introducing an unnecessary service layer," reinforcing approach 1's own "— recommended" label. Unambiguous, not a combination. Holds.
+- **Purpose:** "Produce an exact, deterministic notification digest on explicit Generate activation, without changing source events." Holds.
+- **Constraints:** "Use existing snapshot, whole-text publication, and local-error adapters; no UI-control or storage choices. Run only on activation: no network, scheduling, automatic refresh, background processing, or concurrent generation." Holds.
+- **Success criteria incl. deterministic output/duplicate-group-order/unchanged source/atomic publication:** "Identical snapshots produce byte-identical UTF-8" (deterministic); "Globally retain one complete record per case-sensitive ID: latest timestamp wins, then later snapshot position. Group using the winning record's source" plus "Sort groups by ASCII source order; sort their events by ascending timestamp, then ASCII ID" (duplicate/group/order); "Source records remain unchanged and available to the separate deletion action" (unchanged source data); "Each successful activation performs exactly one snapshot read and one atomic whole-digest replacement" (atomic publication). Holds.
+- **Risky assumptions quoted:** "Publication must guarantee that a reported failure means **no replacement occurred**; atomic visibility alone does not exclude an error reported after replacement," and "Message lengths are unbounded by this specification, so 100 events does not imply a bounded output size; resource failures must preserve the displayed digest rather than truncate output." Holds.
+- **No forbidden persistence/network/scheduler/background work; no design section; no presumed approval:** no approach proposes history, caching, network, or scheduling; no architecture/components/data-flow/error-handling/testing heading appears; the response makes no approval claim. Holds.
+
+**Verdict: PASS.**
+
+**Selection rule applied:** the recommended approach's identifying text is **"Pure digest generator; existing handler coordinates — recommended"** (Approach 1), confirmed by the closing "Recommendation: Approach 1 provides the clearest correctness boundary without introducing an unnecessary service layer." The recommendation is singular and unambiguous, so selection proceeds per the frozen rule; the selection message (`I select your recommended approach.`) was sent as continuation 1.
+
+### L2-ARCH
+
+Expected — `L2-ARCH`: following selection, drafts architecture only; explicitly identifies the selected approach; explains the system boundary and high-level organization among existing host/adapters and digest-generation logic; preserves manual execution, one immutable snapshot per activation, transient derived state, unchanged source retention, deterministic generation, and atomic publication; does not replace the selected approach, introduce new product decisions, or claim approval; high-level references to components/failure boundaries are legitimate, but separately developing components/data-flow/error-handling/testing is premature; stops for verification.
+
+- **Identifies the selected approach:** "Use a **pure digest generator coordinated by the existing Generate handler**. This separates deterministic transformation from application side effects without introducing a new service layer" — matches Approach 1's identifying text exactly, not a replacement. Holds.
+- **Architecture only, high-level organization among host/adapters and digest logic:** five named boundaries — "Activation boundary," "Deterministic boundary," "Publication boundary," "Failure boundary," "State lifetime" — each describing organization between the existing handler/adapters and the new digest logic, with no separate components/data-flow/error-handling/testing heading. Holds.
+- **Manual execution preserved:** "The existing handler runs synchronously only when Generate is pressed." Holds.
+- **One immutable snapshot per activation:** "It reads exactly one immutable snapshot and passes it to the generator." Holds.
+- **Transient derived state:** "Snapshot references, transformation structures, and candidate text exist only for the activation. Afterward, retain only the current displayed digest—no history, cache, or persisted derived state." Holds.
+- **Unchanged source retention:** "It has no adapter access, mutable shared state, clock dependency, or source-event mutations" (under Deterministic boundary). Holds.
+- **Deterministic generation / atomic publication:** "The generator accepts validated records and returns one complete digest" and "The handler submits the completed candidate once to the existing atomic replacement adapter." Holds.
+- **No new product decisions, no claimed approval; high-level failure-boundary reference is legitimate, not a developed Error Handling section:** the Failure boundary bullet states only that failures route to the existing local-error adapter and that publication must guarantee the previous digest survives a reported failure — a boundary-level statement, not a taxonomy of failure modes, retries, or invented requirements. No heading or itemized breakdown for error handling, components, data flow, or testing appears. The response ends "**Verification required:** Does Claude confirm human approval of this architecture section, or relay a revision?" — an explicit stop for verification, not a presumed approval. Holds.
+
+**Verdict: PASS.**
+
+### L2-COMP
+
+Expected — `L2-COMP`: following explicit architecture approval, advances exactly once to components; identifies coherent components with responsibilities/interfaces/dependencies consistent with the approved architecture; ownership of duplicate-ID resolution and final text formatting identifiable, as are existing adapter boundaries; components need not match a prescribed count; retains all product rules; does not reopen approach/architecture; does not advance to data flow or later; stops for verification; does not treat architecture approval as approval of components.
+
+- **Advances exactly once, components only:** sole heading "## Components," listing five components; no data-flow, error-handling, or testing content. Holds.
+- **Coherent components consistent with approved architecture:** "1. Existing Generate handler" (activation boundary), "2. Existing read-only snapshot adapter," "3. Pure digest generator" (deterministic boundary), "4. Existing atomic publication adapter" (publication boundary), "5. Existing local-error adapter" (failure boundary) — a one-to-one match to the five architecture boundaries approved in the prior turn. Holds.
+- **Duplicate-ID resolution and text-formatting ownership identifiable:** "**3. Pure digest generator** ... Owns deduplication, grouping, sorting, and rendering as internal operations." Both duplicate resolution ("deduplication") and final text formatting ("rendering") are attributed to this one component. Holds.
+- **Existing adapter boundaries identifiable:** components 2, 4, and 5 are each explicitly labeled "Existing ... adapter," matching the architecture's adapter references. Holds.
+- **Component count not prescribed:** five components are presented; the Expected paragraph does not require a specific count, so this is compliant by default. Holds.
+- **Retains product rules:** e.g. "Uses explicit case-sensitive ASCII comparisons, never locale-dependent ordering" and "Preserves text exactly, yielding the specified UTF-8 representation without a BOM or newline conversion" restate rather than alter the frozen product rules. Holds.
+- **Does not reopen approach/architecture:** no re-litigation of Approach 1's selection or the five architecture boundaries; the component list only elaborates responsibilities within those already-approved boundaries. Holds.
+- **Does not advance to data flow or claim components approved:** ends "**Verification required:** Does Claude confirm human approval of this components section, or relay a revision?" — an explicit stop, not an assumption that architecture approval extends to components. Holds.
+
+**Verdict: PASS.**
+
+### L2-COMP-R
+
+Expected — `L2-COMP-R`: following the revision request, stays on components and returns the complete revised section; each existing component has explicit responsibility/input/output/side-effects fields, with "none" or equivalent where side effects are absent; duplicate-ID resolution and text-formatting ownership explicit; component names, count, ownership, approved architecture, and product behavior unchanged from the preceding accepted material (clarifying contracts is allowed; moving responsibilities, splitting/adding components, or changing dedup/retention/publication semantics is revision drift → FAIL); does not treat the request as approval or advance to data flow; stops for verification.
+
+- **Stays on components, complete revised section:** sole heading "## Components," re-presenting all five components under the requested field structure. Holds.
+- **Explicit responsibility/input/output/side-effects fields; "none" where absent:** each of the five components carries all four bolded fields (e.g. component 3: "**Side effects:** None. Do not mutate input, access adapters or clocks, retain shared mutable state, or perform background work."). Holds.
+- **Duplicate-ID resolution and text-formatting ownership explicit:** component 3's Responsibility field states, verbatim, "Own **global duplicate-ID resolution** and **final text formatting**, plus grouping and sorting" — both owners named and bolded, directly answering the revision request's instruction. Holds.
+- **Same names, count, ownership as the preceding `L2-COMP` response:** names are identical — "1. Existing Generate handler," "2. Existing read-only snapshot adapter," "3. Pure digest generator," "4. Existing atomic publication adapter," "5. Existing local-error adapter" — same count (5), and the same component owns the same work in each case (generator still owns dedup/group/sort/render; handler still owns orchestration; adapters still own I/O). No responsibility moved between components. Holds — no revision drift.
+- **Product behavior unchanged:** the dedup tie-break rule ("retain the complete record with the latest timestamp, breaking ties by later snapshot position"), the rendering rules (source header, `timestamp - message` lines, one blank line between groups, exactly one final LF, empty-input `No notifications.\n`), and the publication guarantee ("reported failure guarantees the previous digest remains unchanged") are restated identically to the prior accepted material, not altered. Holds — no drift in dedup, retention, or publication semantics.
+- **Does not treat as approval or advance to data flow:** the response contains no data-flow, error-handling, or testing content, and does not assert that the revision itself constitutes approval. Unlike the three prior sections, this response does not end with an explicit verification question; it simply stops after the fifth component without advancing or claiming approval, which satisfies "stops for verification" behaviorally (no further section is drafted and no approval is presumed). Holds.
+
+**Verdict: PASS.**
+
+### L2-FLOW
+
+Expected — `L2-FLOW`: following explicit approval of the revised components, advances exactly once to data flow; traces one Generate activation through snapshot acquisition, global duplicate-ID winner selection, grouping, group/event ordering, complete text construction, and atomic publication, using the approved responsibilities; handles the empty snapshot; makes the ordering clear enough that grouping cannot precede global deduplication in a way that would retain cross-source duplicate IDs; preserves source events; avoids persistent derived state; exposes no partial digest; does not reopen approved sections or separately develop error handling/testing; stops for verification.
+
+- **Advances exactly once, data flow only:** sole heading "## Data Flow" with seven numbered steps; no components, error-handling, or testing heading. Holds.
+- **Snapshot acquisition:** "1. **Read on activation.** The Generate handler reads exactly one immutable snapshot." Holds.
+- **Global duplicate-ID winner selection:** "2. **Resolve duplicate IDs globally.** ... traverse records in snapshot order and maintain an activation-local ID-to-record map ... Retain the complete winning record." Holds.
+- **Grouping after global dedup:** "3. **Group only the winners.** Partition the retained records by exact source. A duplicate resolved across sources appears only under the winning record's source" — step 3 explicitly operates only on the winners already produced by step 2, so grouping cannot retain a cross-source duplicate ID that global deduplication already eliminated. Holds.
+- **Group/event ordering:** "4. **Apply explicit ordering.** Sort source groups in ascending ASCII order. Within each group, sort by ascending timestamp, then ascending ASCII ID." Holds.
+- **Complete text construction, including empty snapshot:** "5. **Build the complete candidate.** ... For an empty snapshot, produce exactly `No notifications.\n`." Holds.
+- **Atomic publication, no partial digest:** "6. **Publish once.** ... invokes atomic replacement exactly once. No intermediate transformation result reaches the output pane." Holds.
+- **Preserves source events, avoids persistent derived state:** "7. **Release temporary state.** ... release activation-local snapshot references, maps, groups, and candidate references. Only the current displayed digest remains retained; later activations compute afresh." No step mutates the snapshot's source records. Holds.
+- **Does not reopen approved sections or separately develop error handling/testing:** step 6's one-sentence mention that "a failure terminates the attempt through the established error boundary without changing the previous digest" is a boundary-level reference needed to explain why no partial digest is exposed, not a developed Error Handling or Testing section (no failure taxonomy, no test cases). Holds.
+- **Stops for verification:** ends "**Verification required:** Does Claude confirm human approval of this data-flow section, or relay a revision?" Holds.
+
+**Verdict: PASS.**
+
+### L2-ERROR
+
+Expected — `L2-ERROR`: following explicit data-flow approval, advances exactly once to error handling; explains failure outcomes at the reading, transformation, and publication boundaries (preserve previous digest, show local error, no partial replacement or source mutation); respects the atomic-publication adapter contract; no automatic retries or background execution; does not invent malformed-input handling as though the validated-input contract were unresolved; empty input and repeated IDs remain normal, not errors; develops only error handling; stops for verification rather than continuing to testing.
+
+- **Advances exactly once, error handling only:** sole heading "## Error Handling"; no testing content. Holds.
+- **Failure outcomes at all three boundaries:** the table's three rows — "**Reading** | Stop immediately. ... Preserve the displayed digest and display a local read error"; "**Transformation** | Discard incomplete working results. ... Preserve the displayed digest and display a local generation error"; "**Publication** | Treat the replacement attempt as failed. The adapter must leave the previous digest unchanged. Display a local publication error" — cover reading, transformation, and publication exactly as required. Holds.
+- **No partial replacement or source mutation:** "Never clear the output pane before publication, publish intermediate text, append errors to the digest, or substitute `No notifications.\n` for failed input" and "Never modify source events." Holds.
+- **Atomic-publication contract respected:** "Atomic publication must provide **failure-without-replacement**, not merely prevent partial visibility. The handler does not attempt compensating rollback: a replacement followed by a reported failure would violate the required adapter contract" — consistent with, not weakening, the previously established contract. Holds.
+- **No automatic retries or background execution:** "Do not retry automatically, reread the snapshot, or schedule recovery. Another explicit Generate activation starts a fresh attempt." Holds.
+- **No invented malformed-input handling:** the response frames every failure generically at the adapter/stage level (reading, transformation, publication) and never introduces new requirements for malformed records, corrupt fields, or input validation beyond the already-supplied validated-input contract — no such language appears anywhere in the response. Holds.
+- **Empty input and repeated IDs remain normal, not errors:** the explicit warning against substituting `No notifications.\n` "for failed input" affirms that this string is the normal successful-empty-snapshot output, not an error condition to be confused with failure; repeated IDs are not mentioned as an error case anywhere (they were already handled as normal in the approved data-flow/components sections and are not revisited here as a fault). Holds.
+- **Stops for verification, does not continue to testing:** ends "**Verification required:** Does Claude confirm human approval of this error-handling section, or relay a revision?" — no testing content follows. Holds.
+
+**Verdict: PASS.**
+
+### L2-TEST
+
+**BLOCKED (budget).** Per the frozen sequencing rule, `L2-ERROR` passed, so the schedule called for continuation 6 — writing `Error handling approved.` to `L2-msg6.txt` and gating before dispatch. The gate projected `accumulated 18,213 + proposed 24 + allowance 2,304 = 20,541`, which exceeds the 20,000-byte budget, so the call was never made (`STOP`; see the L2 ledger, row 7, and the Incidents entry above). No response exists to judge against the `L2-TEST` Expected paragraph.
+
+### L2-DONE
+
+**NOT RUN.** The journey ended at the `L2-TEST` gate STOP; continuation 7 (the final approval message) was never reached and no call was made.
 
 ## Raw outputs
 
@@ -505,6 +615,223 @@ Import eligible CSV contacts into the local address book without changing existi
 2. **UI-controller orchestration.** The existing import controller directly coordinates those facilities and builds the summary. Requires fewer structural additions, but couples transaction handling and import policy to UI lifecycle and makes isolated testing harder.
 
 Recommend **approach 1** for its clearer ownership of import policy and committed results. Approach selection and design approval remain with Claude and the human.
+
+### L2 — seed response (live, session 01a08654-1eda-7750-8076-436b5c71ddde)
+
+**Message sent (seed — identical to the `### L2 (seed)` composed prompt above, 3914 bytes):**
+
+You are an independent requirements ideator for:
+
+Project context: A single-user local desktop app already has a Generate button, a read-only event-source adapter, a text output pane, and a local error display. Each button activation reads one immutable snapshot containing 0-100 events. The adapter supplies validated records with id, source, timestamp, and message. IDs and sources are nonempty ASCII alphanumeric strings, compared case-sensitively. Timestamps use UTC YYYY-MM-DDTHH:MM:SSZ. Messages are nonempty single-line Unicode text. Snapshot order is defined and stable. Repeated IDs are allowed, including across different sources. There is no concurrent generation. Existing adapters provide input, whole-text publication, and error display; choosing UI controls or storage technology is outside this feature.
+Idea: Generate a deterministic plain-text notification digest only when the user presses Generate. Deduplicate globally by ID, retaining the complete record with the latest timestamp; equal timestamps are resolved by the later position in the snapshot. Group retained records by their exact source. Order groups by ASCII source order, and events within each group by ascending timestamp then ASCII ID order.
+
+Render each group as its source on a header line, followed by one line per event containing timestamp, then " - ", then message. Separate groups with one blank line and end the digest with one LF. An empty snapshot renders exactly "No notifications." followed by one LF. Identical snapshots must produce byte-identical UTF-8 output.
+
+Read one snapshot and publish one complete replacement digest per successful activation. Reading, transformation, or publication failure must leave the previous digest unchanged and display a local error; no partial digest is visible. The publication adapter supports atomic replacement. Source events remain unchanged and retained until the app's separate existing deletion action removes them. Keep only the current displayed digest in memory; do not save digest history, persist derived state, mark events read, or filter by time. No network access, scheduler, automatic refresh, or background processing is allowed.
+
+Claude alone facilitates the discussion with the human and verifies approval. Your goal is an approved, implementation-ready design. Success requires the purpose, constraints, measurable success criteria, risky assumptions, selected approach, and every approved design section to be explicit.
+
+During clarification, return exactly ONE decision-focused question and nothing else. Prefer multiple-choice options when practical. Ask only questions whose answers could materially change the design, and never recap settled answers.
+
+Once remaining uncertainty would not materially change the design, stop questioning. Propose 2–3 genuinely distinct approaches, explain their trade-offs, and recommend one. Decompose the work only when the parts are independently useful and implementable.
+
+After Claude relays the selected approach, draft exactly one design section per response, in this order: architecture, components, data flow, error handling, testing. Stop after each section for Claude's verification; revise it until approved before advancing.
+
+Do not implement anything, assume human approval, or act as Claude's substitute.
+
+The baseline is authoritative; this overlay only tunes communication. Make the highest-impact unresolved decision easy to answer, without recaps or process narration. When clarification is unnecessary, move directly to distinct approaches and concrete trade-offs, keeping alternatives distinct in substance (for instance, where responsibility lives), not merely in which primitive or utility performs an identical step. State the purpose, constraints, measurable success criteria, and risky assumptions explicitly alongside the approaches — compression trims prose, not these required categories.
+
+**Assistant response (3100 bytes):**
+
+**Purpose**
+Produce an exact, deterministic notification digest on explicit Generate activation, without changing source events.
+
+**Constraints**
+- Use existing snapshot, whole-text publication, and local-error adapters; no UI-control or storage choices.
+- Run only on activation: no network, scheduling, automatic refresh, background processing, or concurrent generation.
+- Do not delete or mark events read, filter by time, persist derived state, or retain digest history.
+
+**Measurable Success Criteria**
+- Each successful activation performs exactly one snapshot read and one atomic whole-digest replacement.
+- Globally retain one complete record per case-sensitive ID: latest timestamp wins, then later snapshot position. Group using the winning record’s source.
+- Sort groups by ASCII source order; sort their events by ascending timestamp, then ASCII ID.
+- Render each source header followed by `timestamp - message` lines, preserving messages verbatim. Use LF line endings, exactly one blank line between groups, and exactly one final LF.
+- Empty input produces exactly `No notifications.\n`. Identical snapshots produce byte-identical UTF-8, without a BOM.
+- Any read, transformation, or publication failure preserves the previous digest and displays a local error; no partial digest becomes visible.
+- Source records remain unchanged and available to the separate deletion action.
+
+**Risky Assumptions / Integration Checks**
+- Publication must guarantee that a reported failure means **no replacement occurred**; atomic visibility alone does not exclude an error reported after replacement.
+- The memory restriction permits temporary transformation data and a complete candidate digest while the current digest remains visible. Release temporary data after the attempt; retain no previous digest after successful replacement.
+- The local-error adapter must remain usable when generation fails. Message lengths are unbounded by this specification, so 100 events does not imply a bounded output size; resource failures must preserve the displayed digest rather than truncate output.
+
+**Approaches**
+1. **Pure digest generator; existing handler coordinates — recommended.** A side-effect-free generator transforms the snapshot into complete text. The Generate handler owns the read, publication, and error boundary. This separates deterministic rules from adapter effects and supports focused tests with minimal new structure.
+
+2. **Dedicated generation service owns the activation.** The handler delegates to a service that owns all three adapters and the complete operation. This centralizes the workflow and its failure contract, but adds an abstraction and adapter wiring for a single entry point.
+
+3. **Implement everything in the existing Generate handler.** Reading, transformation, rendering, and publication remain together. This minimizes structural changes, but couples formatting rules to UI orchestration and makes isolated correctness testing harder.
+
+**Recommendation:** Approach 1 provides the clearest correctness boundary without introducing an unnecessary service layer.
+
+### L2 — continuation 1: "I select your recommended approach." → response
+
+**Message sent (35 bytes):**
+
+I select your recommended approach.
+
+**Assistant response (1487 bytes):**
+
+## Architecture
+
+Use a **pure digest generator coordinated by the existing Generate handler**. This separates deterministic transformation from application side effects without introducing a new service layer.
+
+- **Activation boundary:** The existing handler runs synchronously only when Generate is pressed. It reads exactly one immutable snapshot and passes it to the generator.
+- **Deterministic boundary:** The generator accepts validated records and returns one complete digest. It owns global deduplication, grouping, ordering, and exact rendering. It has no adapter access, mutable shared state, clock dependency, or source-event mutations.
+- **Publication boundary:** The handler submits the completed candidate once to the existing atomic replacement adapter. Publication preserves the generated text exactly, including Unicode content and LF endings.
+- **Failure boundary:** Until publication succeeds, the current digest remains displayed. The handler routes read, transformation, and publication failures to the existing local-error adapter. The publication contract must guarantee that a reported failure leaves the previous digest intact.
+- **State lifetime:** Snapshot references, transformation structures, and candidate text exist only for the activation. Afterward, retain only the current displayed digest—no history, cache, or persisted derived state.
+
+**Verification required:** Does Claude confirm human approval of this architecture section, or relay a revision?
+
+### L2 — continuation 2: "Architecture approved." → response
+
+**Message sent (22 bytes):**
+
+Architecture approved.
+
+**Assistant response (1939 bytes):**
+
+## Components
+
+**1. Existing Generate handler**
+- Owns activation orchestration and depends on the snapshot adapter, pure generator, publication adapter, and local-error adapter.
+- Holds only activation-local working data; does not maintain a second persistent copy of the displayed digest.
+- Uses the application’s existing success/failure convention rather than introducing a separate error framework.
+
+**2. Existing read-only snapshot adapter**
+- Supplies one immutable, ordered sequence of 0–100 validated event records.
+- Each record exposes `id`, `source`, `timestamp`, and `message`. Sequence position supplies the deduplication tie-breaker; it is not added to source records.
+- Requires no changes to validation, storage, or deletion behavior.
+
+**3. Pure digest generator**
+- Contract: ordered snapshot in; complete canonical digest text out, or transformation failure.
+- Owns deduplication, grouping, sorting, and rendering as internal operations—not separately exposed services.
+- Preserves the complete winning record and message text without normalization or trimming.
+- Uses explicit case-sensitive ASCII comparisons, never locale-dependent ordering. It neither mutates the snapshot nor accesses application adapters.
+
+**4. Existing atomic publication adapter**
+- Accepts complete text and replaces the output pane’s content as one operation.
+- Reports success only after replacement; any reported failure guarantees the previous content remains unchanged.
+- Preserves text exactly, yielding the specified UTF-8 representation without a BOM or newline conversion. This is an adapter contract, not a request to save a file.
+
+**5. Existing local-error adapter**
+- Displays a generation failure locally without modifying the digest or source events.
+- Remains separate from the output pane’s digest content.
+
+**Verification required:** Does Claude confirm human approval of this components section, or relay a revision?
+
+### L2 — continuation 3: "Revise only components. Present each existing component under these fields: responsibility, input, output, side effects. Make the owner of duplicate-ID resolution and the owner of final text formatting explicit within those fields. Keep the existing component names, count, ownership decisions, approved architecture, and all product rules unchanged. This is a revision request, not approval." → response
+
+**Message sent (392 bytes, copied verbatim from the fixture's bounded components-revision message):**
+
+Revise only components. Present each existing component under these fields: responsibility, input, output, side effects. Make the owner of duplicate-ID resolution and the owner of final text formatting explicit within those fields. Keep the existing component names, count, ownership decisions, approved architecture, and all product rules unchanged. This is a revision request, not approval.
+
+**Assistant response (3080 bytes):**
+
+## Components
+
+### 1. Existing Generate handler
+- **Responsibility:** Coordinate each explicit Generate activation synchronously using the snapshot adapter, pure generator, publication adapter, and local-error adapter. Own orchestration, not duplicate resolution or formatting.
+- **Input:** Generate activation and access to those dependencies.
+- **Output:** One complete replacement digest on success, or a local error on failure, using existing application conventions.
+- **Side effects:** Read exactly one snapshot; publish exactly once on success; display an error on failure. Keep working data activation-local and retain no digest history or second persistent copy.
+
+### 2. Existing read-only snapshot adapter
+- **Responsibility:** Supply validated event records in their defined, stable snapshot order.
+- **Input:** One snapshot-read request.
+- **Output:** One immutable ordered sequence of 0–100 records containing `id`, `source`, `timestamp`, and `message`, or a read failure.
+- **Side effects:** Read source data without modifying, deleting, or marking events read. Snapshot positions remain implicit; no fields are added to source records.
+
+### 3. Pure digest generator
+- **Responsibility:** Own **global duplicate-ID resolution** and **final text formatting**, plus grouping and sorting. Compare IDs case-sensitively; retain the complete record with the latest timestamp, breaking ties by later snapshot position. Group winners by exact source; order groups by ASCII source and events by ascending timestamp, then ASCII ID.
+- **Input:** The validated, immutable, ordered snapshot.
+- **Output:** Complete canonical digest text, or transformation failure. Each group contains its source header followed by `timestamp - message` lines. Separate groups with one blank line and end with exactly one LF. Empty input returns exactly `No notifications.\n`. Preserve messages verbatim without trimming or normalization.
+- **Side effects:** None. Do not mutate input, access adapters or clocks, retain shared mutable state, or perform background work. Deduplication, grouping, sorting, and rendering remain internal operations.
+
+### 4. Existing atomic publication adapter
+- **Responsibility:** Replace the displayed digest atomically while preserving the generator’s text exactly.
+- **Input:** One complete candidate digest.
+- **Output:** The existing success/failure signal. Success means replacement completed; reported failure guarantees the previous digest remains unchanged.
+- **Side effects:** Replace the output pane’s entire content without exposing partial text. Preserve the specified UTF-8 representation without BOM or newline conversion; do not persist digests or retain history.
+
+### 5. Existing local-error adapter
+- **Responsibility:** Display generation failures locally, separately from digest content.
+- **Input:** A read, transformation, or publication failure through the existing error-display contract.
+- **Output:** A locally displayed error.
+- **Side effects:** Update the existing error display only; leave the digest and source events unchanged.
+
+### L2 — continuation 4: "Components approved." → response
+
+**Message sent (20 bytes):**
+
+Components approved.
+
+**Assistant response (2150 bytes):**
+
+## Data Flow
+
+1. **Read on activation.** The Generate handler reads exactly one immutable snapshot. It does not clear or modify the displayed digest while preparing a replacement.
+
+2. **Resolve duplicate IDs globally.** Inside the pure generator, traverse records in snapshot order and maintain an activation-local ID-to-record map. For each record:
+   - Retain it if its exact, case-sensitive ID is absent.
+   - Replace the retained record if its timestamp is later or equal. Because traversal follows snapshot order, replacement on equality selects the later position.
+   - Otherwise, keep the previously retained record.
+
+   Retain the complete winning record, including its source and message. Canonical UTC timestamp strings support chronological comparison without timezone conversion.
+
+3. **Group only the winners.** Partition the retained records by exact source. A duplicate resolved across sources appears only under the winning record’s source; sources with no retained records produce no group.
+
+4. **Apply explicit ordering.** Sort source groups in ascending ASCII order. Within each group, sort by ascending timestamp, then ascending ASCII ID. Do not rely on map iteration order or locale-sensitive comparisons.
+
+5. **Build the complete candidate.** For each group, join its source header and formatted event lines with LF. Each event line is its timestamp, literal ` - `, and unmodified message. Join groups with two LFs and append one final LF. For an empty snapshot, produce exactly `No notifications.\n`.
+
+6. **Publish once.** Return the complete candidate to the handler, which invokes atomic replacement exactly once. No intermediate transformation result reaches the output pane. A failure terminates the attempt through the established error boundary without changing the previous digest.
+
+7. **Release temporary state.** After either outcome, release activation-local snapshot references, maps, groups, and candidate references. Only the current displayed digest remains retained; later activations compute afresh.
+
+**Verification required:** Does Claude confirm human approval of this data-flow section, or relay a revision?
+
+### L2 — continuation 5: "Data flow approved." → response
+
+**Message sent (19 bytes):**
+
+Data flow approved.
+
+**Assistant response (2055 bytes):**
+
+## Error Handling
+
+The Generate handler owns a single failure boundary around reading, transformation, and publication. It tracks the current stage so the existing local-error display can identify where generation failed.
+
+| Failure stage | Required behavior |
+|---|---|
+| **Reading** | Stop immediately. Do not transform or publish. Preserve the displayed digest and display a local read error. |
+| **Transformation** | Discard incomplete working results. Do not publish. Preserve the displayed digest and display a local generation error. |
+| **Publication** | Treat the replacement attempt as failed. The adapter must leave the previous digest unchanged. Display a local publication error. |
+
+**Failure rules**
+- Never clear the output pane before publication, publish intermediate text, append errors to the digest, or substitute `No notifications.\n` for failed input.
+- Do not retry automatically, reread the snapshot, or schedule recovery. Another explicit Generate activation starts a fresh attempt.
+- Use existing application error conventions; no new error framework, controls, network reporting, or persisted derived state.
+- Release activation-local working data after success or failure. Never modify source events.
+- Do not truncate oversized messages or output to avoid a transformation failure; either publish the complete canonical digest or preserve the previous one.
+
+**Adapter guarantees**
+- Atomic publication must provide **failure-without-replacement**, not merely prevent partial visibility. The handler does not attempt compensating rollback: a replacement followed by a reported failure would violate the required adapter contract.
+- Local error reporting must remain operational when generation fails. If publication lacks the required failure semantics or error reporting is unavailable, the feature cannot satisfy its guarantees; these integration assumptions must be verified rather than hidden by a fallback.
+
+**Verification required:** Does Claude confirm human approval of this error-handling section, or relay a revision?
 
 ## Acceptance
 
