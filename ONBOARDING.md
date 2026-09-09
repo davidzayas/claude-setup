@@ -101,6 +101,24 @@ bash tests/prompt-contract-mutation-test.sh   # negative tests for the checker (
 A green run of all three is what "the repo is healthy" means here; the live
 credential check in §1 is separate and still needed once per machine.
 
+### The backlog
+
+`TODO.md` is the repo-local backlog and is deliberately empty as of
+2026-09-09 — every item from the gpt-6-astra migration was either done or
+closed as won't-fix, and the one piece of accepted debt (the 25-byte clause
+floor in the no-restatement check) now lives as a comment beside the value
+it describes in `tests/prompt-contract-test.sh`. The file is not installed
+into `~/.claude` and must never be added to `managed-files.sh`; the contract
+test enforces that.
+
+It is not only a notepad. The three GPT-facing roles append a
+`- [ ] prompt-variant: role=<role> model=<model>` line automatically when a
+call resolves to a model that has no tuned overlay (CLAUDE.md "GPT model
+routing"). So an entry appearing there is a signal — someone dispatched to a
+model the prompts are not tuned for — not clutter. Resolve it by adding an
+overlay for that role and model and ticking the line; the contract test
+rejects malformed or duplicate entries.
+
 ## 3. How the pipeline works day to day
 
 - **New feature or behavior change?** The `gpt-brainstorming` skill runs
