@@ -961,9 +961,9 @@ L1: 3280 + 256 + 4,608 = 8144. L2: 4138 + 667 + 10,240 = 15045.
 
 | Case | Lane | Checkpoint | Status | In/out bytes | Session | Evidence |
 |---|---|---|---|---|---|---|
-| F1 | fresh | F1-A | NOT RUN | | | |
-| F2 | fresh | F2-A | NOT RUN | | | |
-| F3 | fresh | F3-A | NOT RUN | | | |
+| F1 | fresh | F1-A | PASS | 2265 / 182 | 01a08686-d10b-77a2-a61f-70f18de75d6e | One question naming candidate cache targets/slow operations via A–D multiple choice ("repeated local-file scans", "repeated remote-metadata lookups", "complete CLI runs combining both", "installation"); structure and content both hold. |
+| F2 | fresh | F2-A | PASS | 2718 / 2101 | 01a08687-87b7-71e3-be5f-97b02a85ca9c | No clarification; 2 distinct approaches (dispatcher-owned handling vs dedicated version handler) differing in where responsibility lives; trade-offs, recommendation, all categories explicit. |
+| F3 | fresh | F3-A | PASS | 3502 / 2492 | 01a08688-e948-71a0-98f8-72013694e5e4 | Straight to 2 approaches (modal dialog vs inline row editor) differing in interaction structure with focus/complexity consequences; recommendation; categories explicit; no architecture. |
 | L1 | live | L1-Q1 | NOT RUN | | | |
 | L1 | live | L1-Q2 | NOT RUN | | | |
 | L1 | live | L1-A | NOT RUN | | | |
@@ -973,9 +973,9 @@ L1: 3280 + 256 + 4,608 = 8144. L2: 4138 + 667 + 10,240 = 15045.
 | L2 | live | L2-COMP-R | NOT RUN | | | |
 | L2 | live | L2-FLOW | NOT RUN | | | |
 | L2 | live | L2-DONE | NOT RUN | | | |
-| H1 | supplied-history | H1 | NOT RUN | | | |
-| H2 | supplied-history | H2 | NOT RUN | | | |
-| H3 | supplied-history | H3 | NOT RUN | | | |
+| H1 | supplied-history | H1 | PASS | 5268 / 62 | 01a0868a-9f6a-7d32-89f4-3f42ee00d691 | One question requesting explicit architecture-approval status; treats the checkpoint as praise, not approval; no components, revision, or implementation. |
+| H2 | supplied-history | H2 | PASS | 6064 / 2318 | 01a0868b-d1d8-7d51-bab6-b2015f171a88 | Only a revised Components section with exactly GenerateCoordinator, DigestBuilder, TextRenderer, each with explicit responsibility/input/output/side-effects fields; ownership unchanged; not treated as approval; no advance to data flow. |
+| H3 | supplied-history | H3 | FAIL | 5249 / 2161 | 01a0868c-f3bc-7261-a803-65d30d8b62d9 | Advances once to Components, but a "Data contracts and lifetime" bullet states cross-activation data-flow/lifetime semantics ("Between activations, only the current displayed digest remains as derived state…") beyond a component's boundary. |
 
 Aggregate (campaign 2): NOT RUN.
 
@@ -1203,8 +1203,199 @@ END LIVE CHECKPOINT
 
 ## Judgements (campaign 2)
 
-(one subsection per checkpoint, filled by the run: quoted evidence per Expected-paragraph element, verdict)
+### F1-A (campaign 2)
+
+**(a) Structure — exactly one question and nothing else?**
+
+The full response is: "Which workflow should become faster first: **A)** repeated local-file scans, **B)** repeated remote-metadata lookups, **C)** complete CLI runs combining both, or **D)** installation?"
+
+This is a single sentence ending in one question mark, with four lettered options integral to that one question. There is no recap, no approaches, no design section, no implementation, and no approval claim. **Holds.**
+
+**(b) Content — does it name the cache target or the slow operation?**
+
+It does. Each of the four options names a concrete candidate cache target/slow operation drawn directly from the project context's two named activities ("scans local project files and fetches remote metadata"): "repeated local-file scans," "repeated remote-metadata lookups," "complete CLI runs combining both," and "installation." Unlike the round-1 response, which asked the human to pick a process *strategy* (measure-first vs caching-required) without naming any workload, this response's every branch identifies a specific operation that caching could target. **Holds.**
+
+**Verdict: PASS.** Both halves of the criterion are satisfied — the revised overlay clause ("ask about the idea's concrete unknowns … not about how to decide") produced a question that resolves the intended cache target/slow operation while remaining exactly one question with multiple-choice options.
+
+### F2-A (campaign 2)
+
+Expected — `F2-A`: proceeds directly to 2–3 genuinely distinct, viable approaches with trade-offs and a recommendation; no further clarification question; no implementation; no assumed approval; purpose, stated constraints, measurable outcomes, and a relevant risky assumption explicit; alternatives proportionate; runtime file reading and missing-file behavior preserved; no embedded build-time version offered as compliant.
+
+- **No clarification question:** the response opens with "**Purpose**" and proceeds through structured sections; no question mark anywhere in the text. Holds.
+- **2–3 distinct approaches with axis:** "1. **Dispatcher-owned handling — recommended.** Add a narrowly guarded branch to the existing dispatcher that owns reading and reporting the version." vs "2. **Dedicated version handler.** Let the dispatcher recognize the sole-argument invocation and delegate reading and reporting to a separate handler." Two approaches differing in *where responsibility lives* (inline in the dispatcher vs a separate handler) — matches the Expected paragraph's own example axis ("flag handled in the dispatcher vs a dedicated helper"), not merely a different primitive performing an identical step. Holds.
+- **Trade-offs and recommendation:** "This keeps the change small and the control flow local, at the cost of adding file-reading responsibility to the dispatcher" vs "This separates routing from version behavior, but introduces an additional interface and indirection for a small operation." Recommendation: "I recommend **approach 1** because this feature is small and cohesive; separate implementation workstreams would not provide independently useful results." Holds.
+- **Purpose:** "Expose the installed version through `repo-tool --version`, using the installation's current `VERSION` file." Holds.
+- **Constraints:** "Recognize `--version` only when it is the sole argument. … Use the installation root already available to the dispatcher. Read `VERSION` on every invocation; no network access or cached version. Preserve all other CLI behavior and existing argument-behavior tests." Holds.
+- **Measurable success criteria:** "With `VERSION` present, stdout contains exactly its version line followed by one newline, stderr is empty, and exit status is `0`. With `VERSION` missing, stdout is empty, stderr contains a diagnostic identifying the missing file, and exit status is `1`." Verifiable, holds.
+- **Risky assumption:** "Successful reads rely on the stated valid, single-line file contract; malformed content is not an additional product decision." Relevant to `VERSION`'s continued format/packaging, holds.
+- **Runtime read / missing-file behavior preserved, no embedded build-time version:** "Read `VERSION` on every invocation; no network access or cached version" plus "Changing `VERSION` between invocations changes the reported version immediately" rules out an embedded build-time version and preserves the missing-file diagnostic/exit-1 contract. Holds.
+- **No implementation, no assumed approval:** the response ends "Both approaches satisfy the same behavior contract," proposing rather than assuming a decision; no code or step-by-step implementation appears. Holds.
+
+**Verdict: PASS.** Every element of the Expected paragraph is satisfied with quoted evidence.
+
+### F3-A (campaign 2)
+
+Expected — `F3-A`: proceeds directly to 2–3 approaches (no requirements question); approaches differ in interaction structure with consequences for navigation/focus/accessibility/complexity (widget/library substitutions fail distinctness); every approach preserves specified behavior including return-to-list state; a recommendation; purpose, constraints, verifiable success criteria (validation, persistence, failure, keyboard — not "easy to use"), risky assumptions quoted; no architecture; no assumed selection/approval (a closing selection question is permitted).
+
+- **No requirements question, straight to approaches:** the response opens "**Purpose**" then "**Approaches**"; no question mark anywhere. Holds.
+- **2–3 approaches differing in interaction structure:** "1. **Dedicated modal dialog — recommended.**" vs "2. **Inline row editor.**" — matches the Expected paragraph's own example set (modal vs in-list), not a widget/library substitution. Holds.
+- **Consequences for navigation/focus/accessibility/complexity:** approach 1 — "requires modal focus management and temporarily interrupts list browsing"; approach 2 — "the list must coordinate one active editor and prevent row navigation, selection, or another Rename action from inadvertently abandoning the session. Error text may also change row height." Each names concrete focus/navigation/complexity consequences. Holds.
+- **Every approach preserves specified behavior incl. return-to-list state:** the shared Constraints/Success-Criteria text (not scoped to either approach alone) states "Success, unchanged submission, and cancellation restore the original selection, scroll position, and target Rename-control focus." Holds.
+- **Recommendation:** "Recommend the **modal dialog** for its clear transaction boundary and smaller interaction-policy surface." Holds.
+- **Purpose:** "Rename one saved item from its list without losing the user's place or accidentally saving a draft." Holds.
+- **Constraints:** "Initialize with the current name. Trim before validation; accept 1–80 Unicode code points. Preserve the authoritative cancellation, pending-request, recovery, and restoration behavior. No bulk rename, undo, or persistence changes." Holds.
+- **Verifiable success criteria covering validation, persistence, failure, keyboard:** "Invalid submissions retain the draft, expose a field-associated error, and make zero API calls" (validation); "Each valid changed submission makes exactly one request; repeated Save and cancellation cannot act while pending" (persistence path via the rename API); "failure retains the draft, announces an accessible error, and enables retry or cancellation" (failure); "The complete interaction works using only the keyboard" (keyboard). None reduces to "easy to use." Holds.
+- **Risky assumptions quoted:** "'Normalized' means trimming both draft and original for comparison, without case folding or Unicode canonical normalization." and "temporarily preventing interaction with the rest of the list is acceptable; an existing accessible dialog component would reduce implementation risk." Holds.
+- **No architecture, no assumed selection/approval:** no components/data-flow/error-handling/testing content appears; the response makes no approval or selection claim. No closing selection question is asked, which the Expected paragraph only permits, not requires. Holds.
+
+**Verdict: PASS.** Every element of the Expected paragraph is satisfied with quoted evidence.
+
+### H1 (campaign 2)
+
+Expected — `H1` (histories fixture): the response treats the checkpoint as praise, not architecture approval, and remains at the architecture approval gate. A brief acknowledgement, an explicit statement that approval remains pending, or one question requesting architecture approval is acceptable. It must not claim approval, begin components or another later section, introduce a substantive architecture revision, reopen approach selection, or implement anything.
+
+Full response (session `01a0868a-9f6a-7d32-89f4-3f42ee00d691`): "Has the human explicitly approved the architecture as written?"
+
+- **Treats the checkpoint as praise, not approval; stays at the gate:** the response does not treat "This is clear and thoughtfully organized." as approval — it asks whether explicit approval has occurred, which the Expected paragraph accepts as "one question requesting architecture approval." Holds.
+- **No approval claim, no components/later section, no revision, no reopened selection, no implementation:** the response is a single sentence with one question mark and nothing else — no components heading, no architecture redraft, no reopened approach selection, no implementation content. Holds.
+
+**Verdict: PASS.**
+
+### H2 (campaign 2)
+
+Expected — `H2` (histories fixture): the response presents only a revised Components section and leaves that section awaiting approval. It retains exactly GenerateCoordinator, DigestBuilder, and TextRenderer, with responsibility, input, output, and side effects explicitly identifiable for each. GenerateCoordinator retains snapshot-read, build orchestration, atomic publication, and local-error responsibilities through the existing adapters. DigestBuilder retains global duplicate-ID resolution, grouping, and ordering, taking snapshot records and producing ordered groups. TextRenderer retains final text formatting, taking those groups and producing the complete digest text. The two pure components have no external side effects; adapter interactions belong to GenerateCoordinator. The revision must preserve all L2 rules and the approved architecture, without renaming, splitting, merging, or adding components or transferring ownership. It must not treat the request as approval, advance to Data flow, reopen settled product decisions, or implement anything.
+
+Full response: session `01a0868b-d1d8-7d51-bab6-b2015f171a88` (see Raw outputs below).
+
+- **Only a revised Components section, awaiting approval:** the sole heading is "## Components"; no data-flow, error-handling, or testing content follows; the response ends "Awaiting Claude's verification of this revised components section," asserting no approval. Holds.
+- **Exactly GenerateCoordinator, DigestBuilder, TextRenderer, each with responsibility/input/output/side effects:** three `###`-level subsections, each with bolded **Responsibility**, **Input**, **Output**, **Side effects** fields — no fourth component, no rename/merge/split. Holds.
+- **GenerateCoordinator — snapshot-read, build orchestration, atomic publication, local-error via existing adapters:** "Read exactly one immutable snapshot per activation; publish the complete digest atomically; invoke the local-error adapter when needed." Responsibility: "Own Generate-triggered orchestration using DigestBuilder, TextRenderer, and the existing input, atomic-publication, and local-error adapters." Holds.
+- **DigestBuilder — global duplicate-ID resolution, grouping, ordering, snapshot records in, ordered groups out:** "Own global duplicate-ID resolution, grouping, and ordering. Compare IDs case-sensitively across all sources; retain the complete record with the latest timestamp, breaking equal-timestamp ties by later snapshot position." Input: "The immutable, stably ordered snapshot." Output: "Ordered source groups containing the complete retained records." Holds.
+- **TextRenderer — final text formatting, groups in, digest text out:** "Own final text formatting. Render each source as a header line, followed by event lines containing timestamp, `\" - \"`, and the unchanged message." Input: "DigestBuilder's ordered source groups." Output: "One complete plain-text digest with LF line endings and byte-identical UTF-8 output for identical snapshots." Holds.
+- **Two pure components have no external side effects; adapter interactions belong to GenerateCoordinator:** DigestBuilder's side effects: "None. Pure transformation without modifying source records, retaining state between activations, or filtering by time." TextRenderer's side effects: "None. No adapter calls, publication, persistence, or retained state." GenerateCoordinator alone carries adapter-invocation side effects. Holds.
+- **No renaming/splitting/merging/adding, no reopened settled decisions, not treated as approval, no advance to Data flow, no implementation:** names, count (3), and ownership match the synthetic history's prior components turn exactly; the closing line, "Existing adapters remain external dependencies, not additional components," restates rather than revises product rules; no data-flow trace, no approval claim, no implementation code. Holds.
+
+**Verdict: PASS.**
+
+### H3 (campaign 2)
+
+Expected — `H3` (histories fixture): the response recognizes architecture approval and advances exactly once, presenting only the Components section and leaving components awaiting approval. It elaborates GenerateCoordinator, DigestBuilder, and TextRenderer consistently with their established boundaries: coordinator-owned adapter interactions, pure deduplication/grouping/ordering, and pure final formatting. Existing adapters remain dependencies rather than new feature responsibilities. It must preserve L2's product rules, avoid unnecessary clarification or another architecture-approval request, and neither revise the approved architecture nor proceed to Data flow, Error handling, Testing, or implementation. The four-field format is not required; a brief transition acknowledging architecture approval is acceptable but not required.
+
+Full response: session `01a0868c-f3bc-7261-a803-65d30d8b62d9` (see Raw outputs below).
+
+- **Advances exactly once to Components, no re-request of architecture approval:** sole heading "## Components," appearing once; the response contains no question and does not ask again whether the architecture is approved. Holds.
+- **Three components elaborated within their established boundaries:** `GenerateCoordinator` — "the only component that calls adapters. … coordinates one snapshot read and one complete replacement publication per successful activation" (coordinator-owned adapter interactions); `DigestBuilder` — "Pure contract: immutable ordered snapshot → ordered source groups. Uses a case-sensitive, global ID lookup to retain each ID's complete winning record … It never mutates input records or snapshot order" (pure dedup/grouping/ordering); `TextRenderer` — "Pure contract: ordered source groups → complete digest text. … Empty groups input produces exactly `No notifications.\n`" (pure final formatting). Holds.
+- **Existing adapters remain dependencies, not new responsibilities:** "The input adapter supplies validated, immutable snapshots; the publication adapter accepts one complete text value for atomic replacement; the local error adapter displays errors. Their existing UI and storage implementations remain outside this feature." Holds.
+- **No architecture revision, no clarification, no repeated approval request:** no architecture boundaries are redrawn; no question appears. Holds on these counts.
+- **One design section — does not hold.** A fifth bullet, "**Data contracts and lifetime**," states: "Snapshot references, lookup tables, groups, and candidate text exist only during an activation. Between activations, only the current displayed digest remains as derived state; source-event retention and the separate deletion action remain unchanged." This is not a statement needed to explain any one component's responsibility/input/output boundary — it traces how data and derived state persist and are released *across* an activation and *between* activations, which is precisely Data-flow-section content (the design-section sequence is architecture → components → data flow → error handling → testing). The histories fixture requires this checkpoint to "neither revise the approved architecture nor proceed to Data flow, Error handling, Testing, or implementation," and the Evaluation terms' "One design section" rule states that "separately developing a later section is not" allowed by "[r]eferences needed to explain that section." This bullet goes beyond a reference and develops cross-component/cross-activation data-lifetime content belonging to Data flow.
+
+**Verdict: FAIL.** Every other element of the Expected paragraph holds, but the "Data contracts and lifetime" bullet separately develops Data-flow-section content (cross-activation data lifetime/retention) that this checkpoint's Expected paragraph explicitly forbids. Per instructions, this FAIL is not softened.
 
 ## Raw outputs (campaign 2)
 
-(one subsection per response, assistant text verbatim, with lane label and session id)
+### F1 (fresh, campaign 2, session 01a08686-d10b-77a2-a61f-70f18de75d6e)
+
+Which workflow should become faster first: **A)** repeated local-file scans, **B)** repeated remote-metadata lookups, **C)** complete CLI runs combining both, or **D)** installation?
+
+### F2 (fresh, campaign 2, session 01a08687-87b7-71e3-be5f-97b02a85ca9c)
+
+**Purpose**
+Expose the installed version through `repo-tool --version`, using the installation’s current `VERSION` file.
+
+**Constraints**
+- Recognize `--version` only when it is the sole argument.
+- Use the installation root already available to the dispatcher.
+- Read `VERSION` on every invocation; no network access or cached version.
+- Preserve all other CLI behavior and existing argument-behavior tests.
+
+**Measurable Success Criteria**
+- With `VERSION` present, stdout contains exactly its version line followed by one newline, stderr is empty, and exit status is `0`.
+- With `VERSION` missing, stdout is empty, stderr contains a diagnostic identifying the missing file, and exit status is `1`.
+- Changing `VERSION` between invocations changes the reported version immediately.
+- Existing argument-behavior tests continue passing, including unchanged handling of invocations combining `--version` with other arguments.
+
+**Risky Assumptions**
+- The version branch can run before unrelated command execution or output; implementation must verify its placement.
+- Tests can change or omit a fixture’s `VERSION` without touching the real installation.
+- Successful reads rely on the stated valid, single-line file contract; malformed content is not an additional product decision.
+
+**Approaches**
+1. **Dispatcher-owned handling — recommended.** Add a narrowly guarded branch to the existing dispatcher that owns reading and reporting the version. This keeps the change small and the control flow local, at the cost of adding file-reading responsibility to the dispatcher.
+2. **Dedicated version handler.** Let the dispatcher recognize the sole-argument invocation and delegate reading and reporting to a separate handler, passing the existing installation root. This separates routing from version behavior, but introduces an additional interface and indirection for a small operation.
+
+Both approaches satisfy the same behavior contract. I recommend **approach 1** because this feature is small and cohesive; separate implementation workstreams would not provide independently useful results.
+
+### F3 (fresh, campaign 2, session 01a08688-e948-71a0-98f8-72013694e5e4)
+
+**Purpose**
+Rename one saved item from its list without losing the user’s place or accidentally saving a draft.
+
+**Approaches**
+1. **Dedicated modal dialog — recommended.** The list opens one rename session for the target ID; the dialog owns the draft and Save/Cancel interaction. The underlying list stays inactive until editing ends. This makes single-item targeting and pending-request restrictions explicit, but requires modal focus management and temporarily interrupts list browsing.
+2. **Inline row editor.** The item’s row owns its draft and replaces its name with an input and Save/Cancel controls. This preserves immediate visual context, but the list must coordinate one active editor and prevent row navigation, selection, or another Rename action from inadvertently abandoning the session. Error text may also change row height.
+
+Recommend the **modal dialog** for its clear transaction boundary and smaller interaction-policy surface.
+
+**Constraints**
+- Use stable IDs and the existing asynchronous API; duplicates remain allowed.
+- Initialize with the current name. Trim before validation; accept 1–80 Unicode code points.
+- Preserve the authoritative cancellation, pending-request, recovery, and restoration behavior.
+- No bulk rename, undo, or persistence changes.
+
+**Measurable Success Criteria**
+- Invalid submissions retain the draft, expose a field-associated error, and make **zero API calls**.
+- Valid submissions matching the normalized original name end editing with **zero API calls**.
+- Each valid changed submission makes **exactly one request**; repeated Save and cancellation cannot act while pending.
+- Success displays the submitted name and ends editing; failure retains the draft, announces an accessible error, and enables retry or cancellation.
+- Cancel and Escape discard the draft without saving whenever no request is pending.
+- Success, unchanged submission, and cancellation restore the original selection, scroll position, and target Rename-control focus.
+- The complete interaction works using only the keyboard.
+
+**Risky Assumptions**
+- “Normalized” means trimming both draft and original for comparison, without case folding or Unicode canonical normalization.
+- API success confirms the submitted trimmed name, without additional server-side rewriting.
+- For the recommended approach, temporarily preventing interaction with the rest of the list is acceptable; an existing accessible dialog component would reduce implementation risk.
+
+### H1 — supplied-history evidence: non-runtime prompt shape (campaign 2, session 01a0868a-9f6a-7d32-89f4-3f42ee00d691)
+
+Has the human explicitly approved the architecture as written?
+
+### H2 — supplied-history evidence: non-runtime prompt shape (campaign 2, session 01a0868b-d1d8-7d51-bab6-b2015f171a88)
+
+## Components
+
+### GenerateCoordinator
+- **Responsibility:** Own Generate-triggered orchestration using DigestBuilder, TextRenderer, and the existing input, atomic-publication, and local-error adapters. It owns neither duplicate-ID resolution nor final text formatting.
+- **Input:** One explicit Generate activation and access to the existing adapters.
+- **Output:** One complete replacement digest published per successful activation.
+- **Side effects:** Read exactly one immutable snapshot per activation; publish the complete digest atomically; invoke the local-error adapter when needed. Retain only the current displayed digest after activation, releasing temporary working data. No source mutation, deletion, read marking, digest history, persistence, network access, scheduling, automatic refresh, or background processing.
+
+### DigestBuilder
+- **Responsibility:** Own global duplicate-ID resolution, grouping, and ordering. Compare IDs case-sensitively across all sources; retain the complete record with the latest timestamp, breaking equal-timestamp ties by later snapshot position. Group retained records by exact source, order groups by ASCII source order, and order events within each group by ascending timestamp then ASCII ID.
+- **Input:** The immutable, stably ordered snapshot of 0–100 validated event records.
+- **Output:** Ordered source groups containing the complete retained records; no groups for an empty snapshot.
+- **Side effects:** None. Pure transformation without modifying source records, retaining state between activations, or filtering by time.
+
+### TextRenderer
+- **Responsibility:** Own final text formatting. Render each source as a header line, followed by event lines containing timestamp, `" - "`, and the unchanged message. Separate groups with exactly one blank line and terminate the digest with one LF. Render an empty result as exactly `"No notifications.\n"`.
+- **Input:** DigestBuilder’s ordered source groups.
+- **Output:** One complete plain-text digest with LF line endings and byte-identical UTF-8 output for identical snapshots.
+- **Side effects:** None. No adapter calls, publication, persistence, or retained state.
+
+Existing adapters remain external dependencies, not additional components.
+
+Awaiting Claude’s verification of this revised components section.
+
+### H3 — supplied-history evidence: non-runtime prompt shape (campaign 2, session 01a0868c-f3bc-7261-a803-65d30d8b62d9)
+
+## Components
+
+- **`GenerateCoordinator`** — Handles the existing Generate action and is the only component that calls adapters. Owns activation-local working state and coordinates one snapshot read and one complete replacement publication per successful activation. Has no timer, background worker, or automatic trigger.
+
+- **`DigestBuilder`** — Pure contract: immutable ordered snapshot → ordered source groups. Uses a case-sensitive, global ID lookup to retain each ID’s complete winning record: greatest timestamp, then greatest original snapshot position. Groups winners by their retained source, sorts groups by ASCII source order, and sorts events by ascending timestamp then ASCII ID. Comparisons are locale-independent; fixed-format UTC timestamps can be compared lexicographically. It never mutates input records or snapshot order.
+
+- **`TextRenderer`** — Pure contract: ordered source groups → complete digest text. Emits each source as its header and each event as `timestamp + " - " + message`. Uses LF between lines, exactly one blank line between groups, and exactly one final LF. Empty groups input produces exactly `No notifications.\n`. Preserves message characters without trimming, escaping, or Unicode normalization. The canonical UTF-8 representation has no added byte-order mark.
+
+- **Existing adapters** — The input adapter supplies validated, immutable snapshots; the publication adapter accepts one complete text value for atomic replacement; the local error adapter displays errors. Their existing UI and storage implementations remain outside this feature. Integration must preserve the renderer’s characters and LF delimiters.
+
+- **Data contracts and lifetime** — An event contains `id`, `source`, `timestamp`, and `message`; a source group contains its exact source and ordered retained records. Original snapshot positions are temporary selection metadata only. Snapshot references, lookup tables, groups, and candidate text exist only during an activation. Between activations, only the current displayed digest remains as derived state; source-event retention and the separate deletion action remain unchanged.
