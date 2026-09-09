@@ -946,6 +946,20 @@ The existing adapters remain external dependencies, not additional components.
 
 **NOT ACCEPTED — `FAIL`.** Coverage: `fresh 2/3 PASS (F1 FAIL); live 9/11 checkpoints PASS (L1 3/3; L2 6/8 — L2-TEST BLOCKED (budget); L2-DONE NOT RUN); supplied-history 2/3 PASS (H3 FAIL)`. Observed failures: `F1-A (question does not name the cache target or slow operation), H3 (components response separately develops error-handling adapter contracts)`. Coverage gaps or invalid evidence: `L2-TEST BLOCKED (budget: 18,213 + 24 + 2,304 = 20,541 > 20,000), L2-DONE NOT RUN`. Required next action: `campaign 2 — one communication-only ideation-overlay revision for F1-A and H3; L2 live schedule re-scoped to end after data flow; all eight cases rerun against the new frozen candidate`. No full-suite pass is claimed.
 
+### Campaign 2
+
+**ACCEPTED for the frozen smoke scope.** Fixture revision `faf3619` and ideation overlay `d9896d456b74a7a0a76e6979e6371f55332ccf9b07ec9afab87e7b77b6169fc6` pass all eight cases: fresh runtime 3/3, live journeys 2/2 with every required checkpoint passed (L2 live path re-scoped to end after data flow in campaign 2; error handling and testing gates are not covered by live evidence), and supplied-history checkpoints 3/3. The role contract passes, the baseline is unchanged, and overlay changes are communication-only. There are no unresolved valid failures or missing, blocked, or invalid required checkpoints. The overlay was `revised only in response to failures identified by evidence references F1-A (round 1), H3 (round 1)`. H1–H3 are supplied-history evidence: non-runtime prompt shape; they do not establish runtime continuation. This result supports this frozen smoke scope, not a general reliability guarantee.
+
+Contract checker on the activated tree (campaign-2 overlay):
+
+```text
+  ok       skills/gpt-brainstorming/SKILL.md: ideation baseline+overlay 1230+823 bytes within 12288
+  ok       agents/codex-adversary.md: review baseline+overlay 1073+356 bytes within 12288
+  ok       commands/gpt-brainstorm.md: second-opinion baseline+overlay 1039+306 bytes within 12288
+```
+
+In campaign 2's live L2 journey, continuations 2–5 each exceeded their frozen next-response allowance (by 205, 55, 943, and 432 bytes respectively), with the accumulated total reaching 16,871 of the 20,000-byte budget by the final checkpoint; a future campaign should size its allowances more realistically against this margin.
+
 ## Frozen snapshot (campaign 2)
 
 Fixture revision: campaign-2 commit (this task's commit; see git log)
@@ -977,7 +991,7 @@ L1: 3280 + 256 + 4,608 = 8144. L2: 4138 + 667 + 10,240 = 15045.
 | H2 | supplied-history | H2 | PASS | 6064 / 2318 | 01a0868b-d1d8-7d51-bab6-b2015f171a88 | Only a revised Components section with exactly GenerateCoordinator, DigestBuilder, TextRenderer, each with explicit responsibility/input/output/side-effects fields; ownership unchanged; not treated as approval; no advance to data flow. |
 | H3 | supplied-history | H3 | PASS | 5249 / 2161 | 01a0868c-f3bc-7261-a803-65d30d8b62d9 | Advances once to Components; the "Data contracts and lifetime" bullet defines cross-component interface payloads and state ownership, not an `L2-FLOW`-style activation trace; no error-handling or testing content; round-1's failing "Risky integration assumptions" paragraph is absent. |
 
-Aggregate (campaign 2): NOT RUN.
+Aggregate (campaign 2): PASS.
 
 ## Composed prompts (campaign 2)
 
