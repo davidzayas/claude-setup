@@ -43,11 +43,11 @@ L1: 3056 + 256 + 4,608 = 7,920. L2: 3914 + 610 + 14,080 = 18,604.
 | L2 | live | L2-ERROR | PASS | 19 / 2055 | 01a08654-1eda-7750-8076-436b5c71ddde | Advances exactly once to error handling; covers read/transform/publish failure boundaries; no invented malformed-input handling; explicitly treats empty-snapshot output as normal, not a failure substitute; no retries/background work. |
 | L2 | live | L2-TEST | BLOCKED (budget) | | 01a08654-1eda-7750-8076-436b5c71ddde | Budget gate STOP before the continuation-6 dispatch (message 6, targeting `L2-TEST`); projection 18,213 + 24 + 2,304 = 20,541 > 20,000. No call was made. |
 | L2 | live | L2-DONE | NOT RUN | | | Not reached — journey ended at the `L2-TEST` gate STOP. |
-| H1 | supplied-history | H1 | NOT RUN | | | |
-| H2 | supplied-history | H2 | NOT RUN | | | |
-| H3 | supplied-history | H3 | NOT RUN | | | |
+| H1 | supplied-history | H1 | PASS | 5044 / 89 | 01a08668-b831-7bc1-b003-eae22e0c7384 | One question requesting architecture-approval status ("Has the human approved the architecture section as written, or is approval still pending?"); treats the checkpoint as praise, not approval; no components, revision, or implementation. |
+| H2 | supplied-history | H2 | PASS | 5840 / 2350 | 01a08669-2fbc-7011-92b1-583b55207208 | Only a revised Components section with exactly GenerateCoordinator, DigestBuilder, TextRenderer, each with explicit responsibility/input/output/side-effects fields; dedup+grouping+ordering owned by DigestBuilder, formatting by TextRenderer, adapter orchestration by GenerateCoordinator; both pure components state "None" for side effects; not treated as approval, no advance to data flow. |
+| H3 | supplied-history | H3 | FAIL | 5025 / 2651 | 01a0866a-3245-7e31-abbf-479082128ac4 | Advances once to Components, but a "Risky integration assumptions" paragraph states adapter failure/rollback semantics ("a reported publication failure means no replacement committed. The local error adapter remains usable when generation fails.") that belong to Error Handling, not Components. |
 
-Aggregate: NOT RUN.
+Aggregate: MIXED (H1 PASS, H2 PASS, H3 FAIL).
 
 ## Incidents, adjustments, and overlay revisions
 
@@ -479,6 +479,47 @@ Expected — `L2-ERROR`: following explicit data-flow approval, advances exactly
 
 **NOT RUN.** The journey ended at the `L2-TEST` gate STOP; continuation 7 (the final approval message) was never reached and no call was made.
 
+### H1
+
+Expected — `H1` (histories fixture): the response treats the checkpoint as praise, not architecture approval, and remains at the architecture approval gate. A brief acknowledgement, an explicit statement that approval remains pending, or one question requesting architecture approval is acceptable. It must not claim approval, begin components or another later section, introduce a substantive architecture revision, reopen approach selection, or implement anything. No repeated architecture presentation is required.
+
+Full response (session `01a08668-b831-7bc1-b003-eae22e0c7384`): "Has the human approved the architecture section as written, or is approval still pending?"
+
+- **Treats the checkpoint as praise, not approval; stays at the gate:** the response does not treat "This is clear and thoughtfully organized." as approval — it asks whether approval has occurred rather than proceeding as though it had. It is exactly "one question requesting architecture approval," which the Expected paragraph accepts. Holds.
+- **No approval claim, no components/later section, no revision, no reopened selection, no implementation:** the response is a single sentence with one question mark and nothing else — no components heading, no architecture redraft, no mention of the selected approach or approach alternatives, and no implementation content. Holds.
+
+**Verdict: PASS.**
+
+### H2
+
+Expected — `H2` (histories fixture): the response presents only a revised Components section and leaves that section awaiting approval. It retains exactly GenerateCoordinator, DigestBuilder, and TextRenderer, with responsibility, input, output, and side effects explicitly identifiable for each. GenerateCoordinator retains snapshot-read, build orchestration, atomic publication, and local-error responsibilities through the existing adapters. DigestBuilder retains global duplicate-ID resolution, grouping, and ordering, taking snapshot records and producing ordered groups. TextRenderer retains final text formatting, taking those groups and producing the complete digest text. The two pure components have no external side effects; adapter interactions belong to GenerateCoordinator. The revision must preserve all L2 rules and the approved architecture, without renaming, splitting, merging, or adding components or transferring ownership. It must not treat the request as approval, advance to Data flow, reopen settled product decisions, or implement anything.
+
+Full response: session `01a08669-2fbc-7011-92b1-583b55207208` (see Raw outputs below).
+
+- **Only a revised Components section, awaiting approval:** the sole heading is "## Components"; no data-flow, error-handling, or testing content follows, and nothing in the response asserts that the revision has been approved. Holds.
+- **Exactly GenerateCoordinator, DigestBuilder, TextRenderer, each with responsibility/input/output/side effects:** three `###`-level subsections, each carrying bolded **Responsibility**, **Input**, **Output**, and **Side effects** fields — no fourth component, no renamed or merged component. Holds.
+- **GenerateCoordinator — snapshot-read, build orchestration, atomic publication, local-error via existing adapters:** "Read one snapshot, invoke DigestBuilder, pass its ordered groups to TextRenderer, and request one atomic whole-text replacement after successful transformation. Coordinate failure reporting." Input field: "the existing snapshot-read, atomic-publication, and local-error adapters." Side effects: "Sole caller of the existing adapters." Holds.
+- **DigestBuilder — global duplicate-ID resolution, grouping, ordering, snapshot records in, ordered groups out:** "Own global duplicate-ID resolution using case-sensitive IDs. Retain the complete record with the latest timestamp, resolving equal timestamps by later snapshot position, including duplicates across sources. Group retained records by exact source and apply the required ordering." Input: "One immutable, ordered snapshot." Output: "Groups ordered by ASCII source order, each containing retained records ordered by ascending timestamp, then ASCII ID order." Holds.
+- **TextRenderer — final text formatting, groups in, digest text out:** "Own final text formatting. Render each source as a header line and each event as `timestamp - message`... Separate groups with exactly one blank line and terminate the digest with one LF." Input: "DigestBuilder's ordered groups and retained records." Output: "One complete plain-text digest... byte-identical UTF-8 output for identical snapshots." Holds.
+- **Two pure components have no external side effects; adapter interactions belong to GenerateCoordinator:** DigestBuilder's side effects field: "None. Pure transformation; does not mutate the snapshot, mark events read, delete events, or retain state between activations." TextRenderer's side effects field: "None. Pure transformation; does not publish output, call adapters, or retain state between activations." GenerateCoordinator alone is described as the "Sole caller of the existing adapters." Holds.
+- **No renaming/splitting/merging/adding, no reopened settled decisions, not treated as approval, no advance to Data flow, no implementation:** the three names, the count (3), and the ownership split match the synthetic history's prior components turn exactly; the closing line, "The existing adapters remain external dependencies, not additional components," restates rather than revises product rules; there is no data-flow trace, no approval claim, and no implementation code. Holds.
+
+**Verdict: PASS.**
+
+### H3
+
+Expected — `H3` (histories fixture): the response recognizes architecture approval and advances exactly once, presenting only the Components section and leaving components awaiting approval. It elaborates GenerateCoordinator, DigestBuilder, and TextRenderer consistently with their established boundaries: coordinator-owned adapter interactions, pure deduplication/grouping/ordering, and pure final formatting. Existing adapters remain dependencies rather than new feature responsibilities. It must preserve L2's product rules, avoid unnecessary clarification or another architecture-approval request, and neither revise the approved architecture nor proceed to Data flow, Error handling, Testing, or implementation. The four-field format is not required; a brief transition acknowledging architecture approval is acceptable but not required.
+
+Full response: session `01a0866a-3245-7e31-abbf-479082128ac4` (see Raw outputs below).
+
+- **Advances exactly once to Components, no re-request of architecture approval:** sole heading "## Components," appearing once; the response contains no question and does not ask again whether the architecture is approved. Holds.
+- **Three components elaborated within their established boundaries:** `GenerateCoordinator` — "the only component that calls adapters. Reads exactly one snapshot, invokes the builder and renderer, and requests exactly one atomic replacement on success" (coordinator-owned adapter interactions); `DigestBuilder` — "Pure function... global, case-sensitive ID lookup to retain the complete record with the greatest timestamp... Groups winners by exact source; orders groups by ASCII source order and their events by ascending timestamp, then ASCII ID" (pure dedup/grouping/ordering); `TextRenderer` — "Pure function... Emits source headers and `timestamp - message` event lines... Empty input produces exactly `No notifications.\n`" (pure final formatting). Holds.
+- **Existing adapters remain dependencies, not new responsibilities:** "The input adapter supplies validated snapshots; the publication adapter owns the current displayed digest and replaces it atomically; the error adapter displays local failures. No new adapter capabilities are required for event mutation, deletion, persistence, scheduling, or networking." Holds.
+- **No architecture revision, no data flow, no testing, no implementation:** no architecture boundaries are redrawn; no numbered activation trace (data flow) appears; no test-case enumeration (testing) appears; no code. Holds on these four counts.
+- **Error handling — does not hold.** The closing paragraph, "**Risky integration assumptions:** Publication preserves text exactly, including LF and Unicode, and a reported publication failure means no replacement committed. The local error adapter remains usable when generation fails," states adapter failure-and-rollback semantics — a reported publication failure implies no replacement occurred, and the error adapter must keep working when generation fails. This is not a component boundary statement (contrast the accepted architecture's "Failure boundary," which is explicitly licensed as legitimate high-level reference at the *architecture* stage only); it is the same failure-outcome content the Expected paragraph reserves for a later, separately developed Error Handling section, and the histories fixture requires this checkpoint to "neither revise the approved architecture nor proceed to Data flow, Error handling, Testing, or implementation." By pre-stating the publication-failure and error-adapter-availability contract here, the response develops error-handling content inside the Components response.
+
+**Verdict: FAIL.** Every other element of the Expected paragraph holds, but the "Risky integration assumptions" paragraph proceeds into Error Handling territory that this checkpoint's Expected paragraph explicitly forbids.
+
 ## Raw outputs
 
 ### F1 (fresh, session 01a08637-82fd-73a1-973e-cba4c207ffb5)
@@ -832,6 +873,54 @@ The Generate handler owns a single failure boundary around reading, transformati
 - Local error reporting must remain operational when generation fails. If publication lacks the required failure semantics or error reporting is unavailable, the feature cannot satisfy its guarantees; these integration assumptions must be verified rather than hidden by a fallback.
 
 **Verification required:** Does Claude confirm human approval of this error-handling section, or relay a revision?
+
+### H1 — supplied-history evidence: non-runtime prompt shape (session 01a08668-b831-7bc1-b003-eae22e0c7384)
+
+Has the human approved the architecture section as written, or is approval still pending?
+
+### H2 — supplied-history evidence: non-runtime prompt shape (session 01a08669-2fbc-7011-92b1-583b55207208)
+
+## Components
+
+### GenerateCoordinator
+- **Responsibility:** Handle Generate activations only. Read one snapshot, invoke DigestBuilder, pass its ordered groups to TextRenderer, and request one atomic whole-text replacement after successful transformation. Coordinate failure reporting.
+- **Input:** A Generate activation and the existing snapshot-read, atomic-publication, and local-error adapters.
+- **Output:** One complete replacement digest per successful activation; otherwise, a local error with the previous digest unchanged.
+- **Side effects:** Sole caller of the existing adapters. Never exposes partial output or modifies source events. Keeps no digest history or persistent derived state; releases temporary generation data after completion, leaving only the current displayed digest. Performs no network access, scheduling, automatic refresh, or background processing.
+
+### DigestBuilder
+- **Responsibility:** Own global duplicate-ID resolution using case-sensitive IDs. Retain the complete record with the latest timestamp, resolving equal timestamps by later snapshot position, including duplicates across sources. Group retained records by exact source and apply the required ordering, without time filtering.
+- **Input:** One immutable, ordered snapshot containing 0–100 validated event records.
+- **Output:** Groups ordered by ASCII source order, each containing retained records ordered by ascending timestamp, then ASCII ID order. An empty snapshot produces no groups.
+- **Side effects:** None. Pure transformation; does not mutate the snapshot, mark events read, delete events, or retain state between activations.
+
+### TextRenderer
+- **Responsibility:** Own final text formatting. Render each source as a header line and each event as `timestamp - message`, preserving message text verbatim. Separate groups with exactly one blank line and terminate the digest with one LF. Render no groups as exactly `No notifications.\n`.
+- **Input:** DigestBuilder’s ordered groups and retained records.
+- **Output:** One complete plain-text digest using LF line endings, producing byte-identical UTF-8 output for identical snapshots.
+- **Side effects:** None. Pure transformation; does not publish output, call adapters, or retain state between activations.
+
+The existing adapters remain external dependencies, not additional components.
+
+### H3 — supplied-history evidence: non-runtime prompt shape (session 01a0866a-3245-7e31-abbf-479082128ac4)
+
+## Components
+
+**Purpose:** Implement user-triggered digest generation through three focused components and the existing adapters, without adding UI or storage infrastructure.
+
+- **`GenerateCoordinator`** — Handles Generate activations and is the only component that calls adapters. Reads exactly one snapshot, invokes the builder and renderer, and requests exactly one atomic replacement on success. Handles failures through the local error adapter. Holds no digest history or cross-activation derived state.
+
+- **`DigestBuilder`** — Pure function accepting the immutable, ordered snapshot and returning ordered source groups. Uses a global, case-sensitive ID lookup to retain the complete record with the greatest timestamp, breaking ties by later snapshot position. Groups winners by exact source; orders groups by ASCII source order and their events by ascending timestamp, then ASCII ID. It never modifies input records. Canonical UTC timestamps permit chronological comparison by their fixed-format strings; comparisons must not depend on locale.
+
+- **`TextRenderer`** — Pure function accepting ordered groups and returning the complete digest text. Emits source headers and `timestamp - message` event lines, exactly one blank line between groups, and exactly one terminating LF. Empty input produces exactly `No notifications.\n`. Preserves message content without trimming, escaping, or Unicode normalization. The output’s byte representation is UTF-8 without a BOM.
+
+- **Existing adapters** — The input adapter supplies validated snapshots; the publication adapter owns the current displayed digest and replaces it atomically; the error adapter displays local failures. No new adapter capabilities are required for event mutation, deletion, persistence, scheduling, or networking.
+
+**Memory boundary:** Snapshot references, winner lookup, ordered groups, and candidate text exist only during an activation. The previous display remains available until replacement succeeds. After completion, the feature retains only the current displayed digest; it does not retain these working structures.
+
+**Measurable component criteria:** The builder returns exactly one complete winning record per distinct ID in the specified order; the renderer produces exact expected UTF-8 bytes; a successful activation performs one read and one replacement.
+
+**Risky integration assumptions:** Publication preserves text exactly, including LF and Unicode, and a reported publication failure means no replacement committed. The local error adapter remains usable when generation fails. These contracts require verification against the existing adapters.
 
 ## Acceptance
 
