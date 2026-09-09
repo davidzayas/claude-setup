@@ -70,6 +70,37 @@ backups).
 superpowers plugin the pipeline depends on; the preflight does not check
 plugins, so verify superpowers appears after merging and restarting).
 
+### Run the tests
+
+Three self-contained suites, no dependencies beyond bash, grep, awk
+(plus rsync and python3 for the third). Run them after cloning, and again
+before opening any PR that touches a prompt file, CLAUDE.md, or the scripts:
+
+```bash
+bash tests/uninstall-test.sh              # install/uninstall in a throwaway tmpdir (~10s)
+bash tests/prompt-contract-test.sh        # static contract on the prompt files (<1s)
+bash tests/prompt-contract-mutation-test.sh   # negative tests for the checker (~30s)
+```
+
+- `uninstall-test.sh` exercises `install.sh`/`uninstall.sh` end to end in a
+  temp home — backups, restores, the interactive menu, the preflight. If it
+  reports `skipped (no pseudo-terminal)`, the four menu tests could not get a
+  pty on this machine; that is a skip, not a failure.
+- `prompt-contract-test.sh` is the guard on the managed prompt files: every
+  overlay's markers exactly once and in order, baseline+overlay under the
+  12288-byte cap for every model present, the required budget / read-only /
+  stop-on-MCP-failure strings, CLAUDE.md's routing lines and alias registry,
+  TODO.md's `prompt-variant` schema, and the no-restatement rule (an overlay
+  may emphasise a baseline rule but may not repeat a baseline clause
+  verbatim). It reads only the repo; it never calls a model.
+- `prompt-contract-mutation-test.sh` proves the checker still catches what it
+  claims to: each case plants one defect in a temp copy and expects a FAIL
+  line naming that guard. If you change the checker, this is the suite that
+  tells you whether you weakened it.
+
+A green run of all three is what "the repo is healthy" means here; the live
+credential check in §1 is separate and still needed once per machine.
+
 ## 3. How the pipeline works day to day
 
 - **New feature or behavior change?** The `gpt-brainstorming` skill runs
