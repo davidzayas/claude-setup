@@ -126,7 +126,7 @@ wc -c "$SCRATCH/cases/F1-prompt.txt"
 awk '/^### Case 1 — ideation, ambiguous feature$/{f=1} f&&/^```text$/{g=1;next} g&&/^```$/{exit} g' docs/prompt-smoke-2026-09-08-gpt-6-astra.md | perl -pe 'chomp if eof' > "$SCRATCH/cases/F1-prompt-from-report.txt"
 cmp "$SCRATCH/cases/F1-prompt.txt" "$SCRATCH/cases/F1-prompt-from-report.txt" && echo IDENTICAL
 ```
-Expected: `2031 …/F1-prompt.txt` and `IDENTICAL` (the 2026-09-08 report's case-1 row records 2031 in-bytes for the final overlay). If not identical, fix the helper — never the report.
+Expected: `2041 …/F1-prompt.txt` and `IDENTICAL` (the 2026-09-08 report's case-1 composed prompt on the final 598-byte overlay; `IDENTICAL` is the acceptance check — the byte count is informational). If not identical, fix the helper — never the report.
 
 - [ ] **Step 4: Write the F2, F3, L1, L2 slot files**
 
