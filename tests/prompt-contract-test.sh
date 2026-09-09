@@ -61,32 +61,43 @@ overlay_models() {
     | sed -E 's/.*:([^:]*):begin -->/\1/' | sort -u
 }
 
-# sentences <file> <begin-marker> <end-marker> — the block body as one
-# whitespace-normalised sentence per line, dropping fragments under 40 bytes
-sentences() {
-  extract "$1" "$2" "$3" | tr '\n' ' ' | sed -E 's/\. +/.\n/g' \
+MIN_CLAUSE_BYTES=25
+
+# normalise — one clause per line. Lines are joined first (so a copy wrapped
+# differently still lines up), then '.', ':', ';', '?' and markdown bullet
+# separators end a clause ("e.g."/"i.e." protected); whitespace collapsed;
+# clauses shorter than MIN_CLAUSE_BYTES dropped. Applied identically to
+# baseline and overlay.
+normalise() {
+  tr '\n' ' ' | sed -E 's/\b([eEiI])\.([gGeE])\. /\1.\2./g; s/ - /\n/g; s/[.:;?]+/\n/g' \
     | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//; s/[[:space:]]+/ /g' \
-    | awk 'length($0) >= 40'
+    | awk -v min="$MIN_CLAUSE_BYTES" 'length($0) >= min'
 }
 
 # check_no_restatement <role> <file> <model>
 # CLAUDE.md "GPT model routing": an overlay may emphasise a baseline rule but
-# must not restate its content. Any baseline sentence appearing verbatim in
-# the overlay body fails.
+# must not restate its content. Any baseline clause appearing verbatim in the
+# overlay fails. Fails loudly, not open, if the baseline yields no clauses.
 check_no_restatement() {
   local role="$1" file="$2" model="$3"
-  local body s hits=0
+  local clauses body c hits=0 n=0
+  clauses="$(extract "$file" "<!-- gpt-baseline:${role}:begin -->" \
+    "<!-- gpt-baseline:${role}:end -->" | normalise)"
+  if [[ -z "$clauses" ]]; then
+    fail "$file: ${role} baseline yields no clauses to compare against"
+    return
+  fi
   body="$(extract "$file" "<!-- gpt-overlay:${role}:${model}:begin -->" \
-    "<!-- gpt-overlay:${role}:${model}:end -->" | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
-  while IFS= read -r s; do
-    [[ -z "$s" ]] && continue
-    if grep -qF -e "$s" <<<"$body"; then
-      fail "$file: overlay ${model} restates a baseline sentence: \"${s:0:60}…\""
+    "<!-- gpt-overlay:${role}:${model}:end -->" | normalise)"
+  while IFS= read -r c; do
+    n=$((n + 1))
+    if grep -qF -e "$c" <<<"$body"; then
+      fail "$file: overlay ${model} restates a baseline clause: \"${c:0:60}\""
       hits=$((hits + 1))
     fi
-  done < <(sentences "$file" "<!-- gpt-baseline:${role}:begin -->" "<!-- gpt-baseline:${role}:end -->")
+  done <<<"$clauses"
   if [[ "$hits" -eq 0 ]]; then
-    pass "$file: overlay ${model} restates no baseline sentence"
+    pass "$file: overlay ${model} restates none of ${n} baseline clauses"
   fi
 }
 
