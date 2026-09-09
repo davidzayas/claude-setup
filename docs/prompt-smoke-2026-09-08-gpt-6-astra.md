@@ -9,26 +9,37 @@ overlay body — and dispatched via `mcp__codex__codex` with
 `model: gpt-6-astra`, `sandbox: read-only`, `approval-policy: never`,
 `config: {"model_reasoning_effort": "high"}`, and `cwd` set to an empty
 scratch git repository. Codex CLI 0.149.1, Azure OpenAI provider, deployment
-`gpt-6-astra` (no alias). One fresh session per case; case 3 continues its
-own session once via `codex-reply`. Byte counts are UTF-8 bytes of the
-composed prompt sent and the assistant text returned. Expected outcomes were
-written before any call was made.
+`gpt-6-astra` (no alias). The Codex MCP server's default tool configuration
+— including any web search it exposes — was in effect for every call and
+was not restricted by the caller; the caller controlled only the parameters
+listed above (case 3's phase-one recorded output cites live web sources,
+consistent with this). One fresh session per case per attempt; cases 1–2
+were rerun (see Failures and adjustments); case 3 continues its own session
+once via `codex-reply`. Byte counts are UTF-8 bytes of the composed prompt
+sent and the assistant text returned. Expected outcomes were written before
+any call was made.
 
 Activation: all three CLAUDE.md role defaults switched to `gpt-6-astra`
 together on 2026-09-08 after user approval; `tests/prompt-contract-test.sh`
 passes on the activated tree. The `gpt-5.6-sol` overlays are retained for
 explicit `--model gpt-5.6-sol` overrides and deliberate rollback (restore the
-three role lines together).
+three role lines together). A rollback to `gpt-5.6-sol` restores an overlay
+that still carries the known weakness TODO.md's 2026-08-10 "prompt-tuning"
+item logs as accepted debt (misaligned skip-clarification trigger vs. the
+baseline's required categories) — that item remains open for `gpt-5.6-sol`
+even though the `gpt-6-astra` half is now done.
 
 | # | Role | Scenario | In/out bytes | Contract pass? | Notes |
 |---|------|----------|--------------|----------------|-------|
-| 1 | ideation | ambiguous feature | 2031 / 228 | yes (after fix) | Rerun 2 (round-2 overlay fix). Exactly one question, nothing else: "Should we (A) measure representative CLI runs first and pursue caching only if reusable work causes meaningful delays (recommended), or (B) treat caching as required and use measurements only to choose what to cache?" One decision-focused, multiple-choice question resolving whether/how to justify caching before designing it; no recap, approaches, design content, implementation, or approval claim. |
-| 2 | ideation | near-complete requirements | 2484 / 1772 | yes (after fix) | Rerun 2 (round-2 overlay fix). No clarifying question; goes straight to explicit **Purpose** ("Expose the installed `repo-tool` version through a predictable, script-friendly `repo-tool --version` invocation"), **Constraints** (4 bullets, incl. "No network access or cached version value"), **Measurable Success Criteria** (4 bullets: exact stdout bytes/newline, exit 0; missing-file stderr/empty-stdout/exit 1; version changes across invocations; tests pass), and a **Risky Assumption** ("Startup before dispatch does not emit output or terminate in a way that prevents the required version outcomes"). Two genuinely distinct architectural approaches — "Dispatcher-owned behavior" vs "Dedicated version handler" — with trade-offs and a recommendation (approach 1). Runtime `VERSION` read at invocation time and missing-file behavior both preserved. No implementation; ends "Neither approach nor any design section is approved yet." All previously-missing required-explicit content now present; see Fix round 2 notes. |
+| 1 | ideation | ambiguous feature | 2042 / 281 | yes (round 3) | Round 3 (final-review overlay revision — session 01a0838f-d471-7c70-9dd1-d4ec4e2ea611), superseding rerun 2. Two-half judgement against the Expected paragraph: **half 1** (exactly one question, nothing else — no recap, approaches, design content, implementation, or approval claim) — pass: "Which target should drive the design: (A) benchmark representative runs first and optimize a demonstrated bottleneck (recommended), (B) faster repeated local scans, (C) faster repeated remote metadata fetches, or (D) a specific slow end-to-end command you can name?" is exactly one question mark's worth of content. **Half 2** (names the cache target or slow operation) — pass: options (B) and (C) explicitly name the two candidate slow operations from the project context ("repeated local scans", "repeated remote metadata fetches") as concrete choices, unlike rerun 2's question, which named neither. |
+| 2 | ideation | near-complete requirements | 2495 / 2080 | yes (round 3) | Round 3 (final-review overlay revision — session 01a08390-c3b9-7130-a58b-9903c70f0c7d), superseding rerun 2. Element-by-element against the Expected paragraph: no clarifying question; **Purpose** explicit ("Expose the installed version through `repo-tool --version`, without changing other CLI behavior"); **Constraints** explicit (4 bullets, incl. "use no network or cached version"); **Measurable Success Criteria** explicit (4 bullets: exact stdout bytes/newline and exit 0 on success, empty stdout/stderr diagnostic/exit 1 on missing file, version changes across invocations, existing tests still pass); **Risky Assumptions** (plural, matching the overlay's Minor-4 fix) explicit, e.g. "A present `VERSION` file is readable and contains one valid version line, as specified; malformed content and other read failures have no separately defined acceptance contract." Two genuinely distinct architectural approaches — "Dispatcher-owned behavior" vs "Dedicated version handler" — with trade-offs and a recommendation (approach 1). Runtime `VERSION` read at invocation time and missing-file behavior both preserved; no embedded build-time version offered. No implementation; ends "Neither approach nor any design section is approved yet." |
 | 3 | second-opinion | JSON-vs-SQLite (two phases) | 1586+886 / 3468+2027 | yes | Recommendation: SQLite, via `BEGIN IMMEDIATE` read-modify-write transactions (coordinated, not atomic-replacement-only); serious alternative offered was per-user JSON with a persistent-lock-file cooperative protocol. Phase two returned 3 `BLOCKER` + 1 `TRADE-OFF`, each with a stated consequence. Hazard (a) (early `migration_complete=true` commit + crash before imports finish) surfaced in phase two, BLOCKER 1. Hazard (b) (skip-unparseable-then-delete loses never-migrated data) surfaced in phase two, BLOCKER 2. No concurrent legacy writers were invented (BLOCKER 3 concerns a newly launched process during migration, not the stopped legacy writers). |
 | 4 | review | seeded defects | 2687 / 1160 | yes | Both seeded defects found: blank-line/empty-file `ValueError` at line 16 (MEDIUM) with trigger sequence and a fix that skips blank lines before unpacking; oversized-`n` slice at line 7 (MEDIUM) with a fix (`items[max(0, len(items) - n):]`) that explicitly preserves `n == 0` behavior. No false findings: no `n == 0` "returns whole list" claim, no `itertools`/type-hint style bait, no impact-"None" or comment-only fix, no unsupported `with`-leak claim. Structure: CRITICAL, HIGH, MEDIUM, LOW in order; `None found.` under each empty section; every finding has file:line, failure, trigger, impact/likelihood, minimal fix. |
 | 5 | review | clean fixture | 2424 / 87 | yes | No invented defects; CRITICAL, HIGH, MEDIUM, LOW in order, each exactly `None found.`; no deferred-generator-validation or out-of-domain defensive-suggestion findings. |
 
 ## Failures and adjustments
+
+### Round 1
 
 Case 2's first-attempt "pass" verdict was rejected on task review: the two
 offered approaches — "A — Bash built-in read and print" and "B — External
@@ -67,6 +78,9 @@ the promised one-line VERSION file" has no analogue here). Per the brief,
 no second overlay change is made in this round; this is recorded as a
 residual `no` and reported as a concern.
 
+Superseded by Round 2 and Round 3 below; the table reflects the results of
+record.
+
 ### Round 2
 
 Observed deviation, quoted verbatim from the round-1 rerun's case-2 output
@@ -91,11 +105,14 @@ not these required categories." The round-1 architectural-distinctness
 clause was also tightened ("rather than a choice of which primitive or
 utility performs an otherwise identical step" → "not which primitive or
 utility performs an identical step") to keep the overlay a short paragraph
-comparable to the `gpt-5.6-sol` one (588 vs 458 bytes with markers/newline,
-587 vs 458 bytes body-only). This adds no new obligation beyond the
-baseline's own "purpose, constraints, measurable success criteria, risky
-assumptions ... explicit" requirement, and does not touch markers, the
-baseline block, or the `gpt-5.6-sol` overlay.
+comparable to the `gpt-5.6-sol` one (587 vs 457 bytes of overlay text). This
+adds no new obligation beyond the baseline's own "purpose, constraints,
+measurable success criteria, risky assumptions ... explicit" requirement,
+and does not touch markers, the baseline block, or the `gpt-5.6-sol`
+overlay. This round reproduces, under `gpt-6-astra`, the same weakness
+TODO.md's 2026-08-10 "prompt-tuning" item had already logged as accepted
+debt against the `gpt-5.6-sol` overlay (misaligned skip-clarification
+trigger vs. the baseline's required categories) — see TODO.md.
 
 Both case 1 and case 2 were rerun as fresh `mcp__codex__codex` sessions
 after this second overlay change (case-1 and case-2 composed prompts
@@ -104,8 +121,19 @@ results are the results of record in the table above; the round-1 rerun's
 raw outputs are kept below under "— rerun 1 after overlay fix" sub-headings
 for the record.
 
-Result: case 1 continues to pass (single decision-focused multiple-choice
-question, nothing else). Case 2 now passes cleanly — purpose, constraints,
+Result: case 1 continues to pass, but only on half the frozen Expected
+paragraph — the round-2 question ("measure representative CLI runs first
+and determine whether caching is justified" vs. "treat caching as
+required") is exactly one question with nothing else (half 1), but, unlike
+the round-1 rerun's question (which named "repeated local scans" and
+"repeated remote metadata fetches" explicitly), it does not name the cache
+target or the slow operation (half 2). It was judged a pass because
+"whether caching is justified at all" is the higher-impact unresolved
+decision given the project context's stated absence of any performance
+measurements; round 1's question was more literally on-criterion for half 2.
+This is superseded by round 3 below, whose case-1 output passes both
+halves; row 1's Notes describe the round-3 output with the same two-half
+honesty. Case 2 now passes cleanly — purpose, constraints,
 measurable success criteria, and a risky assumption are each stated
 explicitly, the two approaches remain architecturally distinct
 ("Dispatcher-owned behavior" vs "Dedicated version handler"), runtime
@@ -116,6 +144,76 @@ needed.
 Case 3: no failure; second-opinion overlay unchanged.
 
 Cases 4–5: no failure; review overlay unchanged.
+
+### Round 3
+
+Prompted by the final branch review, not by a smoke failure: round 2 passed
+cleanly, but the review found the round-1 distinctness clause's "where
+responsibility lives, how the work is organized" phrasing hard-coded a
+single axis of distinctness as a content constraint rather than tuning
+communication (Important 1), and found "a risky assumption" (singular)
+inconsistent with the baseline's "risky assumptions" (plural) (Minor 4).
+
+Change applied to the `gpt-6-astra` **ideation** overlay body in
+`skills/gpt-brainstorming/SKILL.md`, between
+`<!-- gpt-overlay:ideation:gpt-6-astra:begin -->` and
+`<!-- gpt-overlay:ideation:gpt-6-astra:end -->` only (markers, baseline
+block, and the `gpt-5.6-sol` overlay untouched):
+
+Before (round 2):
+> The baseline is authoritative; this overlay only tunes communication. Make the highest-impact unresolved decision easy to answer, without recaps or process narration. When clarification is unnecessary, move directly to distinct approaches and concrete trade-offs, keeping each alternative's distinction architectural — where responsibility lives, not which primitive or utility performs an identical step. State the purpose, constraints, measurable success criteria, and a risky assumption explicitly alongside the approaches — compression trims prose, not these required categories.
+
+After (round 3):
+> The baseline is authoritative; this overlay only tunes communication. Make the highest-impact unresolved decision easy to answer, without recaps or process narration. When clarification is unnecessary, move directly to distinct approaches and concrete trade-offs, keeping alternatives distinct in substance (for instance, where responsibility lives), not merely in which primitive or utility performs an identical step. State the purpose, constraints, measurable success criteria, and risky assumptions explicitly alongside the approaches — compression trims prose, not these required categories.
+
+The architectural axis ("where responsibility lives") is now parenthetical
+example text ("for instance, ...") illustrating "distinct in substance,"
+rather than the sole named criterion — the round-1/round-2 gain (rejecting
+mechanism-only distinctness) is preserved without narrowing "distinct" to
+one axis. "A risky assumption" was pluralized to "risky assumptions" to
+match the baseline's own plural. Neither change adds a new obligation or
+weakens any baseline rule, stage boundary, output contract, or stop
+condition. New overlay body: 598 bytes of overlay text (599 including the
+awk-captured trailing newline; checker reports
+`ideation baseline+overlay 1230+599 bytes within 12288`), vs. the round-2
+body's 587 and `gpt-5.6-sol`'s 457.
+
+Both case 1 and case 2 were rerun as fresh `mcp__codex__codex` sessions
+after this overlay change (case-1 composed prompt's final paragraph in
+"## Inputs" updated to match the new overlay body byte-for-byte; case 2
+inherits it by reference). Call parameters, identical to prior rounds:
+`model: gpt-6-astra`, `sandbox: read-only`, `approval-policy: never`,
+`config: {"model_reasoning_effort": "high"}`,
+`cwd: /private/tmp/claude-501/-Users-david-zayas-playground-claude-setup/30e8edab-1c12-4478-8fb3-9df04d361c43/scratchpad/smoke-cwd`.
+
+Case 1 rerun (session `01a0838f-d471-7c70-9dd1-d4ec4e2ea611`): 2042/281
+bytes. Two-half judgement: half 1 (exactly one question, nothing else) —
+pass; half 2 (names the cache target or slow operation) — pass, via options
+(B)/(C) naming "repeated local scans" / "repeated remote metadata fetches"
+explicitly. Round 3 result: `yes (round 3)`.
+
+Case 2 rerun (session `01a08390-c3b9-7130-a58b-9903c70f0c7d`): 2495/2080
+bytes. Element-by-element judgement: no clarifying question; Purpose,
+Constraints, Measurable Success Criteria, and Risky Assumptions (plural)
+all explicit; two architecturally distinct approaches
+("Dispatcher-owned behavior" vs "Dedicated version handler") with
+trade-offs and a recommendation; runtime `VERSION` read and missing-file
+behavior preserved; no implementation or assumed approval. Round 3 result:
+`yes (round 3)`.
+
+Both cases pass cleanly on round 3. Round 3 is the results of record in
+table rows 1–2 above, superseding rerun 2; rerun 2's outputs are kept below
+under "— rerun 2 after overlay fix" for the record.
+
+Checker output:
+
+```
+$ bash tests/prompt-contract-test.sh
+  ok       skills/gpt-brainstorming/SKILL.md: ideation baseline+overlay 1230+599 bytes within 12288
+  ok       agents/codex-adversary.md: review baseline+overlay 1073+356 bytes within 12288
+  ok       commands/gpt-brainstorm.md: second-opinion baseline+overlay 1039+306 bytes within 12288
+exit=0 (no FAIL lines)
+```
 
 ## Inputs
 
@@ -139,7 +237,7 @@ After Claude relays the selected approach, draft exactly one design section per 
 
 Do not implement anything, assume human approval, or act as Claude's substitute.
 
-The baseline is authoritative; this overlay only tunes communication. Make the highest-impact unresolved decision easy to answer, without recaps or process narration. When clarification is unnecessary, move directly to distinct approaches and concrete trade-offs, keeping each alternative's distinction architectural — where responsibility lives, not which primitive or utility performs an identical step. State the purpose, constraints, measurable success criteria, and a risky assumption explicitly alongside the approaches — compression trims prose, not these required categories.
+The baseline is authoritative; this overlay only tunes communication. Make the highest-impact unresolved decision easy to answer, without recaps or process narration. When clarification is unnecessary, move directly to distinct approaches and concrete trade-offs, keeping alternatives distinct in substance (for instance, where responsibility lives), not merely in which primitive or utility performs an identical step. State the purpose, constraints, measurable success criteria, and risky assumptions explicitly alongside the approaches — compression trims prose, not these required categories.
 ```
 
 Expected: exactly one decision-focused question and nothing else — no recap,
@@ -383,6 +481,38 @@ Startup before dispatch does not emit output or terminate in a way that prevents
 2. **Dedicated version handler.** The dispatcher recognizes the invocation and delegates reading, output, and status to a handler supplied with the installation root. This separates routing from execution and supports isolated testing, but introduces an additional interface for a small, single-use operation.
 
 Recommend **approach 1** for the narrow scope. Neither approach nor any design section is approved yet.
+
+### Case 1 — ideation, ambiguous feature — rerun 3 after final-review overlay revision (session 01a0838f-d471-7c70-9dd1-d4ec4e2ea611)
+
+Which target should drive the design: **(A)** benchmark representative runs first and optimize a demonstrated bottleneck (recommended), **(B)** faster repeated local scans, **(C)** faster repeated remote metadata fetches, or **(D)** a specific slow end-to-end command you can name?
+
+### Case 2 — ideation, near-complete requirements — rerun 3 after final-review overlay revision (session 01a08390-c3b9-7130-a58b-9903c70f0c7d)
+
+**Purpose**
+Expose the installed version through `repo-tool --version`, without changing other CLI behavior.
+
+**Constraints**
+- Recognize `--version` only when it is the sole argument.
+- Read the installation root's `VERSION` file on every invocation; use no network or cached version.
+- Preserve existing argument handling and its tests.
+- Internal organization remains an implementation choice, not an unresolved product requirement.
+
+**Measurable Success Criteria**
+- File present: stdout contains exactly the version line followed by one newline; stderr is empty; exit status is `0`.
+- File missing: stdout is empty; stderr contains a diagnostic identifying the missing `VERSION` file; exit status is `1`.
+- Changing `VERSION` between invocations changes the reported version.
+- Existing argument-behavior tests still pass; invocations combining `--version` with additional arguments retain their previous behavior.
+
+**Risky Assumptions**
+- A present `VERSION` file is readable and contains one valid version line, as specified; malformed content and other read failures have no separately defined acceptance contract.
+- The supplied installation root is authoritative, regardless of the caller's working directory.
+- Missing-file tests can use an isolated installation fixture without disturbing the real installation.
+
+**Approaches**
+1. **Dispatcher-owned behavior — recommended.** Add a narrowly gated branch that reads the file, produces the required output, and exits. This keeps the change small and directly auditable, but places file-reading and diagnostic responsibilities in the dispatcher.
+2. **Dedicated version handler.** Let the dispatcher recognize the sole-argument invocation and delegate reading, output, and status to a handler. This separates routing from behavior and supports focused handler tests, but adds an abstraction for a single small operation.
+
+Recommend approach 1 unless established repository conventions favor handlers. No independently useful workstreams require decomposition. Neither approach nor any design section is approved yet.
 
 ### Case 3 — second-opinion, phase one (session 01a08370-79ce-7e53-ac77-05fed1f851b0)
 
