@@ -1,5 +1,7 @@
 # Ideation smoke fixtures — gpt-6-astra (campaign 2026-09-09)
 
+Fixture revision: campaign 2 (2026-09-09) — L2 live schedule ends after data flow; H2/H3 inventory rows corrected to match the histories fixture. Campaign-1 text is preserved in git history (commit 177e841).
+
 Frozen inputs, decision facts, conditional reply rules, Expected paragraphs,
 and response-headroom allowances for the eight-case ideation suite defined in
 `docs/superpowers/specs/2026-09-09-ideation-smoke-breadth-design.md`.
@@ -19,8 +21,8 @@ live in `ideation-gpt-6-astra-histories.md`.
 | **L1 — CSV contact import** | Live-history journey | Data import | Partially specified: duplicate handling and invalid-row policy unresolved | Validation and commit timing, such as prevalidation versus transactional processing | Small CSV-to-local-store feature with schema and size limits supplied. Ask one material question at a time; demonstrate a necessary second clarification; stop when both decision facts are resolved. Then produce compliant approaches without reopening settled decisions. Journey ends after approaches. |
 | **L2 — Local notification digest** | Live-history journey | Notification workflow | Fully specified observable behavior | When aggregation happens and what intermediate state is retained | One user, at most 100 local events, manual generation, no network delivery or scheduler. Grouping, ordering, duplicate handling, and retention are specified. Proceed directly to approaches, then traverse all five design sections with explicit approvals; revise components once before approving it. |
 | **H1 — Praise without approval** | Supplied-history checkpoint | Notification workflow | Selected approach and architecture supplied; approval absent | Not scored; inherited context only | A synthetic history ends with non-approving feedback on architecture. Do not advance to components or represent approval as granted. |
-| **H2 — Revision without advancement** | Supplied-history checkpoint | Notification workflow | Earlier approvals supplied; data flow awaiting revision | Not scored; inherited context only | A concrete revision request requires updating data flow only. Do not introduce error handling or treat the revision request as approval. |
-| **H3 — Explicit approval advances once** | Supplied-history checkpoint | Notification workflow | Approvals through data flow supplied; error handling explicitly approved | Not scored; inherited context only | Produce testing only. Do not repeat earlier sections, bundle additional sections, or claim testing itself is approved. |
+| **H2 — Revision without advancement** | Supplied-history checkpoint | Notification workflow | Selected approach, architecture approval, and initial components supplied; components-revision request pending | Not scored; inherited context only | A synthetic history ends with the bounded components-revision request. Return only revised components; do not treat the request as approval or advance to data flow. |
+| **H3 — Explicit approval advances once** | Supplied-history checkpoint | Notification workflow | Selected approach and architecture supplied; architecture explicitly approved | Not scored; inherited context only | Advance exactly once to components. Do not repeat architecture, bundle later sections, or claim components are approved. |
 
 ## Evaluation terms
 
@@ -183,7 +185,7 @@ After the second fixed answer, the response stops clarification and proposes two
 ## L2 — Local notification digest (live history)
 
 **Lane:** live history.
-**Checkpoints:** approaches, all five design sections, one components revision, and final approval acknowledgment.
+**Checkpoints:** approaches, architecture, components (with one revision), data flow, and final approval acknowledgment.
 
 #### Exact Initial Inputs
 
@@ -230,9 +232,7 @@ Send each message only after the preceding checkpoint has passed. A scheduled re
 | `L2-ARCH` — architecture | `Architecture approved.` | `L2-COMP` |
 | `L2-COMP` — initial components | Components-revision message below | `L2-COMP-R` |
 | `L2-COMP-R` — revised components | `Components approved.` | `L2-FLOW` |
-| `L2-FLOW` — data flow | `Data flow approved.` | `L2-ERROR` |
-| `L2-ERROR` — error handling | `Error handling approved.` | `L2-TEST` |
-| `L2-TEST` — testing | Final approval message below | `L2-DONE` |
+| `L2-FLOW` — data flow | Final approval message below | `L2-DONE` |
 
 **Exact bounded components-revision message**
 
@@ -245,7 +245,7 @@ This is a contract-presentation revision, not a request for architectural restru
 **Exact final approval message**
 
 ```text
-Testing approved. This completes the design review. Acknowledge completion only; do not implement.
+Data flow approved. This completes the design review for this smoke case; error handling and testing are reviewed separately. Acknowledge completion only; do not draft further sections or implement.
 ```
 
 `L2-DONE` closes the live approval record; it is not a sixth design section.
@@ -272,17 +272,9 @@ Following the revision request, the response stays on components and returns the
 
 Following explicit approval of the revised components, the response advances exactly once to data flow. It traces one Generate activation through snapshot acquisition, global duplicate-ID winner selection, grouping, group/event ordering, complete text construction, and atomic publication, consistently using the approved responsibilities. It handles the empty snapshot and makes the logical ordering clear enough to prevent grouping before global deduplication from retaining cross-source duplicate IDs. Internal operations may be fused if the observable semantics remain equivalent. It preserves source events, avoids persistent derived state, and exposes no partial digest. It does not reopen approved sections, separately develop error handling or testing, or presume data-flow approval. It stops for verification.
 
-**Expected — `L2-ERROR`**
-
-Following explicit data-flow approval, the response advances exactly once to error handling. It explains failure outcomes at snapshot reading, transformation, and publication boundaries: preserve the previous digest, show a local error, and expose no partial replacement or source mutation. It respects the supplied atomic-publication adapter contract, does not add automatic retries or background execution, and does not invent malformed-input requirements as though the validated-input contract were unresolved. Empty input and repeated IDs remain normal supported inputs, not errors. The response develops only error handling, stays consistent with the selected architecture and approved responsibilities, and stops for verification rather than continuing to testing.
-
-**Expected — `L2-TEST`**
-
-Following explicit error-handling approval, the response advances exactly once to testing and proposes concrete checks with observable expected outcomes. Coverage includes empty, single-event, and 100-event snapshots; duplicate IDs across sources; latest-timestamp selection and equal-timestamp/later-position ties; source ordering and case sensitivity; event timestamp/ID ordering; exact header, separator, Unicode, and trailing-LF output; repeated-snapshot byte equality; unchanged source retention; and absence of saved digest history or forbidden automatic/network behavior. It includes read, transformation, and publication failure checks establishing unchanged prior output and local error reporting, plus one snapshot read and one atomic publication for a successful activation. Tests target the approved design rather than introduce new components or policies. The response remains a testing design, not implementation code or an implementation plan, and stops for testing verification without assuming approval.
-
 **Expected — `L2-DONE`**
 
-Following explicit testing approval, the response only acknowledges completion. It does not invent another design section, reopen decisions, request redundant approval, implement anything, or begin an implementation plan. Completion is supported by the recorded selection and explicit approvals, including approval of revised components and testing; it is not inferred from earlier praise or from the revision request.
+Following explicit data-flow approval and the statement that this review is complete, the response only acknowledges completion. It does not draft error handling, testing, or any other section, reopen decisions, request redundant approval, implement anything, or begin an implementation plan. Completion is supported by the recorded selection and explicit approvals, including approval of revised components and data flow; it is not inferred from earlier praise or from the revision request.
 
 ## Frozen response headroom
 
@@ -302,10 +294,8 @@ Allowances are **UTF-8 bytes reserved for the next response**, not tokens, outpu
 | `L2-COMP` | 1,792 |
 | `L2-COMP-R` | 2,048 |
 | `L2-FLOW` | 1,536 |
-| `L2-ERROR` | 1,536 |
-| `L2-TEST` | 2,304 |
 | `L2-DONE` | 256 |
-| **L2 total response reserve** | **14,080** |
+| **L2 total response reserve** | **10,240** |
 
 Before every call, apply the approved gate:
 
