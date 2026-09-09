@@ -56,7 +56,7 @@ Aggregate: FAIL (coverage incomplete) — round 1.
 
 ### Overlay revision 1 (campaign 2)
 
-**(a) F1-A evidence.** The round-1 `F1-A` response was, in full: "Should this work be **A) measurement-first**—benchmark representative CLI runs and require evidence of worthwhile speedup before committing to caching (recommended)—or **B) caching-required**—commit to caching now and use measurements only to choose what to cache?" **Hypothesis:** the overlay clause "Make the highest-impact unresolved decision easy to answer" steers toward process/strategy decisions (measure first?) rather than the idea's concrete unknowns.
+**(a) F1-A evidence.** The round-1 `F1-A` response was, in full: "Should this work be **A) measurement-first**—benchmark representative CLI runs and require evidence of worthwhile speedup before committing to caching (recommended)—or **B) caching-required**—commit to caching now and use measurements only to choose what to cache?" **Hypothesis:** the overlay clause "Make the highest-impact unresolved decision easy to answer" steers toward process/strategy decisions (measure first?) rather than the idea's concrete unknowns. The identical F1 prompt (same 598-byte overlay, model, and settings) PASSED both halves on 2026-09-08 (docs/prompt-smoke-2026-09-08-gpt-6-astra.md, round-3 case 1, via options (B)/(C)); the round-1 FAIL here is therefore one sample against one, and this hypothesis is one-sample, not an established cause.
 
 **(b) H3 evidence.** The round-1 `H3` response closed with: "**Risky integration assumptions:** Publication preserves text exactly, including LF and Unicode, and a reported publication failure means no replacement committed. The local error adapter remains usable when generation fails. These contracts require verification against the existing adapters." **Hypothesis:** the overlay clause "State … risky assumptions explicitly alongside the approaches" is being generalized to every design section, pulling later-section content forward.
 
@@ -73,6 +73,16 @@ After (campaign 2):
 ```text
 The baseline is authoritative; this overlay only tunes communication. Make the highest-impact unresolved decision easy to answer, without recaps or process narration; ask about the idea's concrete unknowns (which target, which behavior, which policy), not about how to decide. When clarification is unnecessary, move directly to distinct approaches and concrete trade-offs, keeping alternatives distinct in substance (for instance, where responsibility lives), not merely in which primitive or utility performs an identical step. State the purpose, constraints, measurable success criteria, and risky assumptions explicitly alongside the approaches — compression trims prose, not these required categories. Within design sections, develop only the current section; leave failure handling and tests to their own sections.
 ```
+
+**Boundary note:** the second added sentence ("Within design sections, develop only the current section; leave failure handling and tests to their own sections.") restates the baseline's section-order obligation rather than tuning communication. It is retained because a recorded failure (H3, round 1) named exactly that boundary and the contract passes (823 bytes vs 1,230 baseline), but it is the first accretion of that kind; guardrail recorded in TODO: an overlay may emphasise a baseline rule only when a recorded failure names it, and must not restate the rule's content.
+
+### Campaign-2 L2 allowance overruns (not a failure)
+
+Allowance overruns in campaign 2: the seed response exceeded its 3,072 allowance by 286 bytes and continuations 1–4 exceeded theirs by 205, 55, 943, and 432 bytes; continuation 5 (161 vs 256) did not. Final accumulated 16,871 of 20,000.
+
+### Fixture discrepancy (campaign 2, recorded not edited)
+
+`tests/smoke-fixtures/ideation-gpt-6-astra-cases.md` line 22 (case inventory, L2) still reads "traverse all five design sections with explicit approvals"; the L2 Checkpoints line, schedule table, final approval message, and headroom table in the same file end L2 after data flow. The inventory row was not corrected when H2/H3's were. The file is not edited here because its sha256 (6c961f50…) is the recorded campaign-2 fixture identity; correct it at the next campaign's freeze (TODO).
 
 ## Composed prompts (round 1)
 
@@ -950,6 +960,8 @@ The existing adapters remain external dependencies, not additional components.
 
 **ACCEPTED for the frozen smoke scope.** Fixture revision `faf3619` and ideation overlay `d9896d456b74a7a0a76e6979e6371f55332ccf9b07ec9afab87e7b77b6169fc6` pass all eight cases: fresh runtime 3/3, live journeys 2/2 with every required checkpoint passed (L2 live path re-scoped to end after data flow in campaign 2; error handling and testing gates are not covered by live evidence), and supplied-history checkpoints 3/3. The role contract passes, the baseline is unchanged, and overlay changes are communication-only. There are no unresolved valid failures or missing, blocked, or invalid required checkpoints. The overlay was `revised only in response to failures identified by evidence references F1-A (round 1), H3 (round 1)`. H1–H3 are supplied-history evidence: non-runtime prompt shape; they do not establish runtime continuation. This result supports this frozen smoke scope, not a general reliability guarantee.
 
+Scope contraction: the spec's success criterion of a live journey through error handling and testing, and the suite-pass bullet "L2 must complete the full approval/revision schedule through L2-DONE", are met in campaign 2 only against the re-scoped definition of L2-DONE (after data flow); the frozen scope is narrower than the spec's. The overlay clause added in revision 1 — "leave failure handling and tests to their own sections" — therefore has no live-history coverage at the error-handling/testing boundary it targets; its only coverage is the components→(no data flow) boundary in L2 and the supplied-history checkpoint H3.
+
 Contract checker on the activated tree (campaign-2 overlay):
 
 ```text
@@ -958,11 +970,11 @@ Contract checker on the activated tree (campaign-2 overlay):
   ok       commands/gpt-brainstorm.md: second-opinion baseline+overlay 1039+306 bytes within 12288
 ```
 
-In campaign 2's live L2 journey, continuations 2–5 each exceeded their frozen next-response allowance (by 205, 55, 943, and 432 bytes respectively), with the accumulated total reaching 16,871 of the 20,000-byte budget by the final checkpoint; a future campaign should size its allowances more realistically against this margin.
+Allowance overruns are recorded under Incidents.
 
 ## Frozen snapshot (campaign 2)
 
-Fixture revision: campaign-2 commit (this task's commit; see git log)
+Fixture revision: faf3619
 Content hashes (sha256): cases fixture `6c961f502021418017738d78b79867c37f381087138f8826c1dfca4e92965502`; histories fixture unchanged from campaign 1: `a7e4eabfa46b13995c4264d86b852d70b13cc5e9dfd7ee9980b4dfd5d3793e62`; ideation baseline body unchanged: `56095c118cbff113334c5df1ab183bdf378fe8cdf2bfe1ad917c5918018d8089`; `gpt-6-astra` ideation overlay body `d9896d456b74a7a0a76e6979e6371f55332ccf9b07ec9afab87e7b77b6169fc6`
 (823 bytes incl. LF).
 
@@ -1226,7 +1238,7 @@ L1 final accumulated: **6758** bytes. No allowance was exceeded.
 | 5 (continuation 4) | 20 | 1968 | 16512 | `Components approved.` → `L2-FLOW` | `gate: 14524 + 20 + 1536 = 16080 -> OK` (returned 1968 exceeded the 1536 allowance by 432 bytes) |
 | 6 (continuation 5) | 198 | 161 | 16871 | final approval message → `L2-DONE` | `gate: 16512 + 198 + 256 = 16966 -> OK` |
 
-L2 final accumulated: **16871** bytes. The gate never stopped the journey; every continuation from step 2 onward returned more bytes than its allowance, progressively reducing headroom, but no projected total exceeded 20,000 and the 30,000-byte hard boundary was never approached.
+L2 final accumulated: **16871** bytes. The gate never stopped the journey; continuations 1–4 (ledger steps 2–5) returned more bytes than their allowances; continuation 5 did not; headroom was progressively reduced, but no projected total exceeded 20,000 and the 30,000-byte hard boundary was never approached.
 
 ## Judgements (campaign 2)
 
@@ -1321,7 +1333,7 @@ Expected — `L1-A`: after the second fixed answer, clarification stops; 2–3 s
 
 ### L2-A (campaign 2)
 
-Expected — `L2-A` (campaign-2 wording): goes directly to 2–3 substantively distinct approaches without a clarification turn; alternatives materially differ in responsibility or representation (not merely sort/group/container primitive); each preserves the complete external contract; trade-offs; one clearly recommended approach; purpose, constraints, measurable success criteria, and risky assumptions explicit, including deterministic output, correct duplicate/group/order behavior, unchanged source data, and atomic publication; no forbidden persistence/networking/scheduling/background work; no design section or presumed approval.
+Expected — `L2-A` (unchanged from campaign 1): goes directly to 2–3 substantively distinct approaches without a clarification turn; alternatives materially differ in responsibility or representation (not merely sort/group/container primitive); each preserves the complete external contract; trade-offs; one clearly recommended approach; purpose, constraints, measurable success criteria, and risky assumptions explicit, including deterministic output, correct duplicate/group/order behavior, unchanged source data, and atomic publication; no forbidden persistence/networking/scheduling/background work; no design section or presumed approval.
 
 - **No clarification turn:** the response opens with "**Purpose**" and contains no question mark anywhere. Holds.
 - **2–3 approaches differing in responsibility, not primitive:** "1. **Application-level generation operation with a pure digest builder — recommended.** The button delegates to a small operation that owns adapter interaction; a side-effect-free builder owns deduplication, grouping, ordering, and rendering." vs. "2. **Button-controller-owned generation.** The existing button controller owns adapter interaction and digest policy together, optionally using private helpers." These differ in *where responsibility is owned* (split operation/pure builder vs. one undivided controller), matching the fixture's own example axis, not which sort/group primitive executes the same organization. Holds.
