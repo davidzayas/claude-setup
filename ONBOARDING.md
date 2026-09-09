@@ -27,7 +27,10 @@ config files first).
    (sign-in or API key) or Azure-hosted (full TOML in the repo's
    `docs/azure-openai-codex.md`; note the model value is your Azure
    DEPLOYMENT NAME, and the `gpt_model_alias:` registry in CLAUDE.md maps
-   it to a prompt-overlay family if the names differ).
+   it to a prompt-overlay family if the names differ). The pipeline's
+   three GPT roles default to **`gpt-6-astra`** (CLAUDE.md "GPT model
+   routing"), so an Azure resource needs a deployment with exactly that
+   name — or an alias line mapping your deployment to `gpt-6-astra`.
 3. **Codex MCP server** registered in Claude Code:
 
    ```bash
@@ -40,7 +43,7 @@ config files first).
 |---|---|---|
 | Binaries | `claude --version && codex --version` | Both CLIs present (Azure: 0.149.1+) |
 | Registration | `claude mcp get codex` | MCP server registered — handshake only |
-| Credentials | one trivial codex call from a Claude Code session (fully restart it first) | The whole chain, end to end |
+| Credentials | one trivial codex call from a Claude Code session (fully restart it first), `model: gpt-6-astra` | The whole chain, end to end, against the deployment the pipeline actually uses |
 
 "Connected" does **not** prove credentials — the key is only checked at
 request time. MCP servers inherit their environment from session start, so
@@ -82,6 +85,15 @@ plugins, so verify superpowers appears after merging and restarting).
 - If the codex MCP server is down, the pipeline **stops and tells you**
   rather than quietly substituting Claude for GPT's role — a Claude review
   of Claude's code is not a second opinion.
+- **Which GPT model.** All three roles run on `gpt-6-astra` since
+  2026-09-08, each with a tuned prompt overlay validated by a five-case
+  smoke run (`docs/prompt-smoke-2026-09-08-gpt-6-astra.md`). The previous
+  `gpt-5.6-sol` overlays are kept: pass `--model gpt-5.6-sol` to
+  `/gpt-brainstorm` or `/adversarial-review` to use it for one call, or
+  restore the three `gpt_*_model:` lines in CLAUDE.md together to roll
+  back. Switching to a new model means adding an overlay per role and
+  rerunning the smoke cases — the 2026-09-08 spec and plan under
+  `docs/superpowers/` are the template.
 
 ## 4. When something breaks
 
