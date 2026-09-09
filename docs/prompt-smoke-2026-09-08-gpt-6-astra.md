@@ -1,6 +1,6 @@
 # Prompt smoke run — gpt-6-astra
 
-Prompt revision: <fill in Task 6: `git rev-parse --short HEAD` at activation>
+Prompt revision: 4190702
 Spec: `docs/superpowers/specs/2026-09-08-gpt-6-astra-migration-design.md`.
 
 Method: each prompt is composed exactly as the runtime composes it — the
@@ -13,6 +13,12 @@ scratch git repository. Codex CLI 0.149.1, Azure OpenAI provider, deployment
 own session once via `codex-reply`. Byte counts are UTF-8 bytes of the
 composed prompt sent and the assistant text returned. Expected outcomes were
 written before any call was made.
+
+Activation: all three CLAUDE.md role defaults switched to `gpt-6-astra`
+together on 2026-09-08 after user approval; `tests/prompt-contract-test.sh`
+passes on the activated tree. The `gpt-5.6-sol` overlays are retained for
+explicit `--model gpt-5.6-sol` overrides and deliberate rollback (restore the
+three role lines together).
 
 | # | Role | Scenario | In/out bytes | Contract pass? | Notes |
 |---|------|----------|--------------|----------------|-------|
