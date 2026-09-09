@@ -61,6 +61,35 @@ overlay_models() {
     | sed -E 's/.*:([^:]*):begin -->/\1/' | sort -u
 }
 
+# sentences <file> <begin-marker> <end-marker> — the block body as one
+# whitespace-normalised sentence per line, dropping fragments under 40 bytes
+sentences() {
+  extract "$1" "$2" "$3" | tr '\n' ' ' | sed -E 's/\. +/.\n/g' \
+    | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//; s/[[:space:]]+/ /g' \
+    | awk 'length($0) >= 40'
+}
+
+# check_no_restatement <role> <file> <model>
+# CLAUDE.md "GPT model routing": an overlay may emphasise a baseline rule but
+# must not restate its content. Any baseline sentence appearing verbatim in
+# the overlay body fails.
+check_no_restatement() {
+  local role="$1" file="$2" model="$3"
+  local body s hits=0
+  body="$(extract "$file" "<!-- gpt-overlay:${role}:${model}:begin -->" \
+    "<!-- gpt-overlay:${role}:${model}:end -->" | tr '\n' ' ' | sed -E 's/[[:space:]]+/ /g')"
+  while IFS= read -r s; do
+    [[ -z "$s" ]] && continue
+    if grep -qF -e "$s" <<<"$body"; then
+      fail "$file: overlay ${model} restates a baseline sentence: \"${s:0:60}…\""
+      hits=$((hits + 1))
+    fi
+  done < <(sentences "$file" "<!-- gpt-baseline:${role}:begin -->" "<!-- gpt-baseline:${role}:end -->")
+  if [[ "$hits" -eq 0 ]]; then
+    pass "$file: overlay ${model} restates no baseline sentence"
+  fi
+}
+
 # check_overlay <role> <file> <model> <baseline-bytes>
 # Every overlay present is held to the same contract as the configured one:
 # both markers exactly once and in order (a missing end marker would make
@@ -85,6 +114,8 @@ check_overlay() {
   if [[ "$bytes_o" -eq 0 ]]; then
     fail "$file: overlay ${model} body is empty"
   fi
+
+  check_no_restatement "$role" "$file" "$model"
   if (( bytes_b + bytes_o <= MAX_FIXED_PROMPT_BYTES )); then
     pass "$file: ${role} baseline+overlay(${model}) ${bytes_b}+${bytes_o} bytes within ${MAX_FIXED_PROMPT_BYTES}"
   else

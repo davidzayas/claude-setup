@@ -13,8 +13,11 @@ trap 'rm -rf "$TMP"' EXIT
 PASS=0
 FAIL=0
 
-ok()  { PASS=$((PASS + 1)); echo "  ok    $1"; }
-bad() { FAIL=$((FAIL + 1)); echo "  FAIL  $1"; }
+SKIP=0
+
+ok()   { PASS=$((PASS + 1)); echo "  ok    $1"; }
+bad()  { FAIL=$((FAIL + 1)); echo "  FAIL  $1"; }
+skip() { SKIP=$((SKIP + 1)); echo "  skip  $1"; }
 
 # check <description> <command...> — pass/fail on the command's exit status
 check() {
@@ -28,17 +31,37 @@ test_fails() { if "$@" >/dev/null 2>&1; then return 1; else return 0; fi; }
 # present <path> — true if anything is at the path, including a dangling symlink
 present() { [[ -e "$1" || -L "$1" ]]; }
 
+# BSD and util-linux `script` disagree on syntax. Decide the flavor from
+# `--version` (util-linux answers, BSD rejects the flag) rather than from a
+# live run: a transient pty-allocation failure once sent the suite down the
+# wrong-syntax branch.
+if script --version >/dev/null 2>&1; then PTY_FLAVOR=gnu; else PTY_FLAVOR=bsd; fi
+
+# pty_available — can `script` allocate a pseudo-terminal right now? Probed
+# with the detected syntax, once more after a pause.
+pty_available() {
+  local attempt
+  for attempt in 1 2; do
+    if [[ "$PTY_FLAVOR" == gnu ]]; then
+      script -qec true /dev/null </dev/null >/dev/null 2>&1 && return 0
+    else
+      script -q /dev/null true </dev/null >/dev/null 2>&1 && return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+
 # run_pty <input-lines> <command...> — run the command on a pseudo-terminal
-# (so [[ -t 0 ]] is true) feeding it input. BSD and util-linux `script`
-# disagree on syntax; try BSD (macOS) first.
+# (so [[ -t 0 ]] is true) feeding it input.
 run_pty() {
   local input="$1"; shift
   # keep the writer open briefly: BSD script forwards EOF from a closed
   # stdin pipe before the buffered input reaches the child's pty
-  if script -q /dev/null true >/dev/null 2>&1; then
-    { printf '%s\n' "$input"; sleep 1; } | script -q /dev/null "$@"
-  else
+  if [[ "$PTY_FLAVOR" == gnu ]]; then
     { printf '%s\n' "$input"; sleep 1; } | script -qec "$*" /dev/null
+  else
+    { printf '%s\n' "$input"; sleep 1; } | script -q /dev/null "$@"
   fi
 }
 
@@ -278,22 +301,30 @@ before=$(snapshot "$FHOME")
 check "exits nonzero" test_fails uninstall_f </dev/null
 check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
 
-echo "uninstall: menu selection restores the chosen backup"
-make_two_backups multi-pick
-CLAUDE_HOME="$FHOME" run_pty "2" bash "$FREPO/uninstall.sh" >/dev/null
-check "picked the second (newer) candidate" grep -q "newer original" "$FHOME/CLAUDE.md"
-check "unselected backup untouched" ls "$FHOME"/CLAUDE.md.backup-* >/dev/null
+if pty_available; then
+  echo "uninstall: menu selection restores the chosen backup"
+  make_two_backups multi-pick
+  CLAUDE_HOME="$FHOME" run_pty "2" bash "$FREPO/uninstall.sh" >/dev/null
+  check "picked the second (newer) candidate" grep -q "newer original" "$FHOME/CLAUDE.md"
+  check "unselected backup untouched" ls "$FHOME"/CLAUDE.md.backup-* >/dev/null
 
-echo "uninstall: garbage input is re-prompted, then honored"
-make_two_backups multi-garbage
-CLAUDE_HOME="$FHOME" run_pty "$(printf 'x\n9\n1')" bash "$FREPO/uninstall.sh" >/dev/null
-check "eventually restored first candidate" grep -q "older original" "$FHOME/CLAUDE.md"
+  echo "uninstall: garbage input is re-prompted, then honored"
+  make_two_backups multi-garbage
+  CLAUDE_HOME="$FHOME" run_pty "$(printf 'x\n9\n1')" bash "$FREPO/uninstall.sh" >/dev/null
+  check "eventually restored first candidate" grep -q "older original" "$FHOME/CLAUDE.md"
 
-echo "uninstall: DRY_RUN with interactive selection changes nothing"
-make_two_backups multi-dry
-before=$(snapshot "$FHOME")
-DRY_RUN=1 CLAUDE_HOME="$FHOME" run_pty "1" bash "$FREPO/uninstall.sh" >/dev/null
-check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
+  echo "uninstall: DRY_RUN with interactive selection changes nothing"
+  make_two_backups multi-dry
+  before=$(snapshot "$FHOME")
+  DRY_RUN=1 CLAUDE_HOME="$FHOME" run_pty "1" bash "$FREPO/uninstall.sh" >/dev/null
+  check "home unchanged" test "$(snapshot "$FHOME")" = "$before"
+else
+  echo "uninstall: interactive menu tests (no pseudo-terminal available; \`script\` flavor: $PTY_FLAVOR)"
+  skip "menu selection restores the chosen backup"
+  skip "unselected backup untouched"
+  skip "garbage input is re-prompted, then honored"
+  skip "DRY_RUN with interactive selection changes nothing"
+fi
 
 # ---- uninstall: rerun ------------------------------------------------------------
 
@@ -385,5 +416,9 @@ check "links created" test -L "$FHOME/CLAUDE.md"
 # ---- summary -------------------------------------------------------------------
 
 echo
-echo "$PASS passed, $FAIL failed"
+if (( SKIP > 0 )); then
+  echo "$PASS passed, $FAIL failed, $SKIP skipped (no pseudo-terminal)"
+else
+  echo "$PASS passed, $FAIL failed"
+fi
 if (( FAIL > 0 )); then exit 1; fi
