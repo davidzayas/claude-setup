@@ -760,6 +760,8 @@ EOF
 
 ### Task 8: Aggregate, acceptance statement, failure-driven overlay loop, review
 
+> **SUPERSEDED after round 1 (2026-09-09).** Round 1 ended FAIL with incomplete coverage: F1 FAIL (measure-first meta-question, no target named), H3 FAIL (components response pre-stated error-handling adapter contracts), L2-TEST BLOCKED (budget: 18,213 + 24 + 2,304 = 20,541 > 20,000) and L2-DONE NOT RUN; all other 14 checkpoints PASS. The user chose to revise the overlay **and** re-scope L2 as a second frozen fixture campaign rather than rerun the unchanged fixtures into a predictable budget stop. Tasks 9–12 below replace this task. Its Step 2a/2b acceptance wording and Step 3–4 review/finish procedure are reused there.
+
 **Files:**
 - Modify: `docs/prompt-smoke-2026-09-09-gpt-6-astra-ideation.md` (Aggregate line, Acceptance section; on a loop: Incidents, a "Frozen snapshot (round 2)" block, new composed prompts, new rows)
 - Modify only in the loop: `skills/gpt-brainstorming/SKILL.md` (the `gpt-6-astra` ideation overlay body only)
@@ -826,3 +828,194 @@ bash -c 'bash tests/prompt-contract-test.sh 2>&1 | tail -3; echo "exit=${PIPESTA
 git status --short; git log --oneline main..HEAD
 ```
 Expected: `exit=0`, `89 passed, 0 failed`, clean tree, the branch's commits. Then invoke `superpowers:finishing-a-development-branch` (previous work merged via PR; `ONBOARDING.md` is unchanged, so no re-share).
+
+---
+
+## Campaign 2 (added 2026-09-09 after round 1)
+
+Round 1 is preserved in the report as the record. Campaign 2 changes exactly two things — the ideation overlay (one communication-only revision addressing the two behavioural failures) and L2's live schedule (ends after data flow so the journey fits the 20KB budget) — and then reruns all eight cases against the new frozen candidate. The spec's rules for a fixture campaign apply: fixtures are corrected explicitly and versioned, expectations frozen before any new call, the original evidence preserved. Everything in Global Constraints still binds; where Tasks 4–7 are referenced below, follow their procedures with the campaign-2 prompts, allowances, and labels.
+
+### Task 9: Round-1 verdict, overlay revision, campaign-2 fixtures, second freeze
+
+**Files:**
+- Modify: `docs/prompt-smoke-2026-09-09-gpt-6-astra-ideation.md` (Aggregate line; `## Acceptance` round-1 statement; `## Incidents…` overlay-revision entry; new `## Frozen snapshot (campaign 2)`, `## Checkpoint table (campaign 2)`, `## Composed prompts (campaign 2)`, `## Live journey ledgers (campaign 2)`, `## Judgements (campaign 2)`, `## Raw outputs (campaign 2)` sections appended at the end)
+- Modify: `skills/gpt-brainstorming/SKILL.md` (the `gpt-6-astra` ideation overlay body only)
+- Modify: `tests/smoke-fixtures/ideation-gpt-6-astra-cases.md` (L2 checkpoints line, schedule table, final approval message, `L2-DONE` Expected paragraph, headroom table; case-inventory rows for H2 and H3)
+- Regenerate (scratch): `$SCRATCH/cases/*-prompt.txt` for all eight cases
+
+**Interfaces:**
+- Consumes: round-1 statuses (17 rows); the saved round-1 raw outputs for F1 and H3 (`$SCRATCH/cases/F1-output.txt`, `H3-output.txt`) as the evidence for the revision.
+- Produces: the campaign-2 overlay body (hash recorded), campaign-2 fixture revision (commit SHA recorded), eight recomposed seeds, and a 15-row campaign-2 checkpoint table at `NOT RUN`.
+
+- [ ] **Step 1: Record the round-1 verdict**
+
+Set `Aggregate: FAIL (coverage incomplete) — round 1.` Under `## Acceptance` write, verbatim with the fields filled:
+
+> **NOT ACCEPTED — `FAIL`.** Coverage: `fresh 2/3 PASS (F1 FAIL); live 9/11 checkpoints PASS (L1 3/3; L2 6/8 — L2-TEST BLOCKED (budget), L2-DONE NOT RUN); supplied-history 2/3 PASS (H3 FAIL)`. Observed failures: `F1-A (question does not name the cache target or slow operation), H3 (components response separately develops error-handling adapter contracts)`. Coverage gaps or invalid evidence: `L2-TEST BLOCKED (budget: 18,213 + 24 + 2,304 = 20,541 > 20,000), L2-DONE NOT RUN`. Required next action: `campaign 2 — one communication-only ideation-overlay revision for F1-A and H3; L2 live schedule re-scoped to end after data flow; all eight cases rerun against the new frozen candidate`. No full-suite pass is claimed.
+
+- [ ] **Step 2: Revise the overlay (communication-only) and record the hypotheses**
+
+Under `## Incidents, adjustments, and overlay revisions` add an entry `### Overlay revision 1 (campaign 2)` containing: (a) F1-A evidence — quote the round-1 question and state the hypothesis: *"Make the highest-impact unresolved decision easy to answer" steers toward process/strategy decisions (measure first?) rather than the idea's concrete unknowns*; (b) H3 evidence — quote the "Risky integration assumptions" paragraph and state the hypothesis: *"State … risky assumptions explicitly alongside the approaches" is being generalized to every design section, pulling later-section content forward*; (c) the exact before/after overlay text.
+
+Replace the overlay body between `<!-- gpt-overlay:ideation:gpt-6-astra:begin -->` and `<!-- gpt-overlay:ideation:gpt-6-astra:end -->` in `skills/gpt-brainstorming/SKILL.md` with exactly this single paragraph (one line, no trailing spaces):
+
+```text
+The baseline is authoritative; this overlay only tunes communication. Make the highest-impact unresolved decision easy to answer, without recaps or process narration; ask about the idea's concrete unknowns (which target, which behavior, which policy), not about how to decide. When clarification is unnecessary, move directly to distinct approaches and concrete trade-offs, keeping alternatives distinct in substance (for instance, where responsibility lives), not merely in which primitive or utility performs an identical step. State the purpose, constraints, measurable success criteria, and risky assumptions explicitly alongside the approaches — compression trims prose, not these required categories. Within design sections, develop only the current section; leave failure handling and tests to their own sections.
+```
+
+Markers, the baseline block, and the `gpt-5.6-sol` block are untouched. Then:
+
+```bash
+cd /Users/david.zayas/playground/claude-setup
+bash -c 'bash tests/prompt-contract-test.sh 2>&1 | grep -E "FAIL|ideation baseline\+overlay"; echo "exit=${PIPESTATUS[0]}"'
+awk '/gpt-overlay:ideation:gpt-6-astra:begin/{f=1;next} /gpt-overlay:ideation:gpt-6-astra:end/{f=0} f' skills/gpt-brainstorming/SKILL.md | wc -c
+```
+Expected: no `FAIL`, an `ideation baseline+overlay 1230+<n> bytes within 12288` line with n ≈ 790, `exit=0`.
+
+- [ ] **Step 3: Re-scope L2 in the cases fixture (campaign-2 fixture revision)**
+
+In `tests/smoke-fixtures/ideation-gpt-6-astra-cases.md`:
+
+1. Add directly under the file's title: `Fixture revision: campaign 2 (2026-09-09) — L2 live schedule ends after data flow; H2/H3 inventory rows corrected to match the histories fixture. Campaign-1 text is preserved in git history (commit 177e841).`
+2. L2 **Checkpoints** line → `approaches, architecture, components (with one revision), data flow, and final approval acknowledgment.`
+3. Replace the **Frozen Approval and Revision Schedule** table with:
+
+```markdown
+| Response just judged | Exact next message | Expected next checkpoint |
+|---|---|---|
+| `L2-A` — approaches | Selection message above | `L2-ARCH` |
+| `L2-ARCH` — architecture | `Architecture approved.` | `L2-COMP` |
+| `L2-COMP` — initial components | Components-revision message below | `L2-COMP-R` |
+| `L2-COMP-R` — revised components | `Components approved.` | `L2-FLOW` |
+| `L2-FLOW` — data flow | Final approval message below | `L2-DONE` |
+```
+
+4. Replace the **Exact final approval message** block's text with:
+
+```text
+Data flow approved. This completes the design review for this smoke case; error handling and testing are reviewed separately. Acknowledge completion only; do not draft further sections or implement.
+```
+
+5. Delete the `**Expected — L2-ERROR**` and `**Expected — L2-TEST**` paragraphs. Replace `**Expected — L2-DONE**` with:
+
+```markdown
+**Expected — `L2-DONE`**
+
+Following explicit data-flow approval and the statement that this review is complete, the response only acknowledges completion. It does not draft error handling, testing, or any other section, reopen decisions, request redundant approval, implement anything, or begin an implementation plan. Completion is supported by the recorded selection and explicit approvals, including approval of revised components and data flow; it is not inferred from earlier praise or from the revision request.
+```
+
+6. In the headroom table delete the `L2-ERROR` and `L2-TEST` rows and set **L2 total response reserve** to **10,240** (3,072 + 1,536 + 1,792 + 2,048 + 1,536 + 256).
+7. Case-inventory rows: H2 → Specification `Selected approach, architecture approval, and initial components supplied; components-revision request pending`, Checks `A synthetic history ends with the bounded components-revision request. Return only revised components; do not treat the request as approval or advance to data flow.`; H3 → Specification `Selected approach and architecture supplied; architecture explicitly approved`, Checks `Advance exactly once to components. Do not repeat architecture, bundle later sections, or claim components are approved.`
+
+Leave every other line of the fixture unchanged; `tests/smoke-fixtures/ideation-gpt-6-astra-histories.md` is unchanged.
+
+- [ ] **Step 4: Recompose all eight seeds and re-verify the budget**
+
+```bash
+SCRATCH=/private/tmp/claude-501/-Users-david-zayas-playground-claude-setup/30e8edab-1c12-4478-8fb3-9df04d361c43/scratchpad
+for c in F1 F2 F3 L1 L2; do python3 "$SCRATCH/compose.py" "$SCRATCH/cases/$c-context.txt" "$SCRATCH/cases/$c-idea.txt" > "$SCRATCH/cases/$c-prompt.txt"; done
+for h in H1 H2 H3; do python3 "$SCRATCH/compose.py" "$SCRATCH/cases/L2-context.txt" "$SCRATCH/cases/L2-idea.txt" "$SCRATCH/cases/$h-history.txt" "$SCRATCH/cases/$h-checkpoint.txt" > "$SCRATCH/cases/$h-prompt.txt"; done
+wc -c "$SCRATCH"/cases/*-prompt.txt
+L2=$(wc -c < "$SCRATCH/cases/L2-prompt.txt"); SEL='I select your recommended approach.'; A1='Architecture approved.'; A2='Components approved.'
+REV='Revise only components. Present each existing component under these fields: responsibility, input, output, side effects. Make the owner of duplicate-ID resolution and the owner of final text formatting explicit within those fields. Keep the existing component names, count, ownership decisions, approved architecture, and all product rules unchanged. This is a revision request, not approval.'
+FIN='Data flow approved. This completes the design review for this smoke case; error handling and testing are reviewed separately. Acknowledge completion only; do not draft further sections or implement.'
+echo "L2 path: $L2 + $(( ${#SEL}+${#A1}+${#REV}+${#A2}+${#FIN} )) + 10240 = $(( L2 + ${#SEL}+${#A1}+${#REV}+${#A2}+${#FIN} + 10240 ))  (must be <= 20000; round-1 overruns through L2-FLOW totalled 1,420 bytes, so slack should exceed that)"
+```
+Expected: every seed grows by the overlay delta (≈ +190 bytes); L2 path ≈ 15,000 — at least 4,000 bytes of slack.
+
+- [ ] **Step 5: Second freeze in the report**
+
+Append to the report, mirroring Task 3's structure with campaign-2 headings: `## Frozen snapshot (campaign 2)` (fixture revision = the SHA this task will commit — write `<this commit>` and fill it in Step 6 with `--amend`-free wording: record the cases-fixture and overlay sha256 hashes instead, plus "fixture revision: campaign-2 commit, see git log"), settings unchanged, new L1/L2 preflight lines; `## Checkpoint table (campaign 2)` with **15** rows (F1-A, F2-A, F3-A, L1-Q1, L1-Q2, L1-A, L2-A, L2-ARCH, L2-COMP, L2-COMP-R, L2-FLOW, L2-DONE, H1, H2, H3) all `NOT RUN` and `Aggregate (campaign 2): NOT RUN.`; `## Composed prompts (campaign 2)` with the eight new seeds pasted by script and `cmp`-verified as in Task 3 Step 3; `## Live journey ledgers (campaign 2)` (empty L1/L2 tables); `## Judgements (campaign 2)`; `## Raw outputs (campaign 2)`.
+
+- [ ] **Step 6: Commit (freeze 2)**
+
+```bash
+cd /Users/david.zayas/playground/claude-setup
+git add skills/gpt-brainstorming/SKILL.md tests/smoke-fixtures/ideation-gpt-6-astra-cases.md docs/prompt-smoke-2026-09-09-gpt-6-astra-ideation.md
+git commit -F - <<'EOF'
+Ideation smoke campaign 2: overlay revision 1, L2 re-scoped to end after data flow
+
+Round 1 recorded NOT ACCEPTED — FAIL (F1-A, H3; L2-TEST budget block).
+Overlay: ask about the idea's concrete unknowns, not how to decide; keep
+later-section content out of the current section. L2 live path reserve
+drops from 14,080 to 10,240 bytes. Freeze boundary for campaign 2.
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+EOF
+```
+
+---
+
+### Task 10: Campaign 2 — rerun fresh cases F1–F3 and supplied-history checkpoints H1–H3
+
+**Files:**
+- Modify: `docs/prompt-smoke-2026-09-09-gpt-6-astra-ideation.md` (campaign-2 rows F1–F3 and H1–H3, `## Judgements (campaign 2)`, `## Raw outputs (campaign 2)`)
+- Create (scratch): `$SCRATCH/cases/F{1,2,3}-output-c2.txt`, `H{1,2,3}-output-c2.txt`
+
+**Interfaces:**
+- Consumes: the campaign-2 seeds; the (unchanged) Expected paragraphs `F1-A`, `F2-A`, `F3-A` in the cases fixture and H1–H3 in the histories fixture.
+- Produces: six judged campaign-2 rows.
+
+- [ ] **Step 1: Run F1–F3 exactly as Task 4 Steps 1–5, with `-c2` output file names and campaign-2 headings** (`### F1-A (campaign 2)`, `### F1 (fresh, campaign 2, session <threadId>)`). Judge F1 on both halves; name the approaches and axes for F2/F3.
+- [ ] **Step 2: Run H1–H3 exactly as Task 7 Steps 1–2, with `-c2` output file names and campaign-2 headings.** For H3 apply the "One design section" term strictly: any adapter-failure semantics or test content beyond what is needed to state a component's boundary is separate development of a later section.
+- [ ] **Step 3: Commit**
+
+```bash
+cd /Users/david.zayas/playground/claude-setup
+git add docs/prompt-smoke-2026-09-09-gpt-6-astra-ideation.md
+git commit -F - <<'EOF'
+Ideation smoke campaign 2: fresh cases F1-F3 and checkpoints H1-H3
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+EOF
+```
+
+---
+
+### Task 11: Campaign 2 — rerun live journeys L1 and L2
+
+**Files:**
+- Modify: `docs/prompt-smoke-2026-09-09-gpt-6-astra-ideation.md` (campaign-2 rows L1-Q1…L1-A and L2-A…L2-DONE, campaign-2 ledgers, judgements, raw outputs; Incidents on a budget stop)
+- Create (scratch): `$SCRATCH/cases/L1-out{1,2,3}-c2.txt`, `L1-msg{1,2}-c2.txt`, `L2-out{1..6}-c2.txt`, `L2-msg{1..5}-c2.txt`
+
+**Interfaces:**
+- Consumes: campaign-2 seeds; L1 rules/replies (unchanged); the campaign-2 L2 schedule (five continuations: selection, `Architecture approved.`, revision message, `Components approved.`, the new final message) and allowances 3,072 / 1,536 / 1,792 / 2,048 / 1,536 / 256.
+- Produces: nine judged campaign-2 rows and two complete ledgers.
+
+- [ ] **Step 1: Run L1 exactly as Task 5 Steps 1–7** (fresh session; gate every dispatch; rule-matched replies; `-c2` file names; campaign-2 headings).
+- [ ] **Step 2: Run L2 as Task 6 Steps 1–4 with the campaign-2 schedule:**
+
+| # | Exact message | Allowance | Judge against |
+|---|---|---|---|
+| 1 | `I select your recommended approach.` | 1,536 | `L2-ARCH` |
+| 2 | `Architecture approved.` | 1,792 | `L2-COMP` |
+| 3 | components-revision message (fixture, verbatim) | 2,048 | `L2-COMP-R` |
+| 4 | `Components approved.` | 1,536 | `L2-FLOW` |
+| 5 | `Data flow approved. This completes the design review for this smoke case; error handling and testing are reviewed separately. Acknowledge completion only; do not draft further sections or implement.` | 256 | `L2-DONE` (campaign-2 Expected) |
+
+Same gate, sequencing, selection, judging, and stop rules as Task 6. A budget stop is still recorded honestly if it happens.
+- [ ] **Step 3: Commit**
+
+```bash
+cd /Users/david.zayas/playground/claude-setup
+git add docs/prompt-smoke-2026-09-09-gpt-6-astra-ideation.md
+git commit -F - <<'EOF'
+Ideation smoke campaign 2: live journeys L1 and L2
+
+Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>
+EOF
+```
+
+---
+
+### Task 12: Campaign 2 — aggregate, acceptance, review, finish
+
+**Files:**
+- Modify: `docs/prompt-smoke-2026-09-09-gpt-6-astra-ideation.md` (`Aggregate (campaign 2)` line; `## Acceptance` campaign-2 statement)
+- Modify on accepted debt only: `TODO.md`
+
+- [ ] **Step 1: Aggregate the 15 campaign-2 rows** (all `PASS` → `PASS`; any `FAIL` → `FAIL`; else `INCOMPLETE`).
+- [ ] **Step 2: Acceptance statement** — on `PASS`, Task 8 Step 2a's ACCEPTED text with: fixture revision = the Task 9 commit SHA; overlay hash = the campaign-2 overlay sha256; `fresh runtime 3/3, live journeys 2/2 with every required checkpoint passed (L2 live path re-scoped to end after data flow in campaign 2; error handling and testing gates are not covered by live evidence), and supplied-history checkpoints 3/3`; `revised only in response to failures identified by evidence references F1-A (round 1), H3 (round 1)`. Otherwise Task 8 Step 2b's NOT ACCEPTED text. **No further overlay revision in this plan** — a `FAIL` here stops for the user.
+- [ ] **Step 3: Contract checker and paste its three byte lines under Acceptance**; commit `Ideation smoke campaign 2: <aggregate>`.
+- [ ] **Step 4: Codex-adversary review** exactly as Task 8 Step 3 (paths `TODO.md skills/ tests/smoke-fixtures/ideation-gpt-6-astra-cases.md tests/smoke-fixtures/ideation-gpt-6-astra-histories.md`; intent updated to mention campaign 2's re-scoped L2 and overlay revision 1). Adjudicate every finding.
+- [ ] **Step 5: Final verification and branch finish** exactly as Task 8 Step 4.
