@@ -18,7 +18,7 @@ written before any call was made.
 |---|------|----------|--------------|----------------|-------|
 | 1 | ideation | ambiguous feature | 2031 / 228 | yes (after fix) | Rerun 2 (round-2 overlay fix). Exactly one question, nothing else: "Should we (A) measure representative CLI runs first and pursue caching only if reusable work causes meaningful delays (recommended), or (B) treat caching as required and use measurements only to choose what to cache?" One decision-focused, multiple-choice question resolving whether/how to justify caching before designing it; no recap, approaches, design content, implementation, or approval claim. |
 | 2 | ideation | near-complete requirements | 2484 / 1772 | yes (after fix) | Rerun 2 (round-2 overlay fix). No clarifying question; goes straight to explicit **Purpose** ("Expose the installed `repo-tool` version through a predictable, script-friendly `repo-tool --version` invocation"), **Constraints** (4 bullets, incl. "No network access or cached version value"), **Measurable Success Criteria** (4 bullets: exact stdout bytes/newline, exit 0; missing-file stderr/empty-stdout/exit 1; version changes across invocations; tests pass), and a **Risky Assumption** ("Startup before dispatch does not emit output or terminate in a way that prevents the required version outcomes"). Two genuinely distinct architectural approaches — "Dispatcher-owned behavior" vs "Dedicated version handler" — with trade-offs and a recommendation (approach 1). Runtime `VERSION` read at invocation time and missing-file behavior both preserved. No implementation; ends "Neither approach nor any design section is approved yet." All previously-missing required-explicit content now present; see Fix round 2 notes. |
-| 3 | second-opinion | JSON-vs-SQLite (two phases) | | | |
+| 3 | second-opinion | JSON-vs-SQLite (two phases) | 1586+886 / 3468+2027 | yes | Recommendation: SQLite, via `BEGIN IMMEDIATE` read-modify-write transactions (coordinated, not atomic-replacement-only); serious alternative offered was per-user JSON with a persistent-lock-file cooperative protocol. Phase two returned 3 `BLOCKER` + 1 `TRADE-OFF`, each with a stated consequence. Hazard (a) (early `migration_complete=true` commit + crash before imports finish) surfaced in phase two, BLOCKER 1. Hazard (b) (skip-unparseable-then-delete loses never-migrated data) surfaced in phase two, BLOCKER 2. No concurrent legacy writers were invented (BLOCKER 3 concerns a newly launched process during migration, not the stopped legacy writers). |
 | 4 | review | seeded defects | | | |
 | 5 | review | clean fixture | | | |
 
@@ -106,6 +106,8 @@ explicitly, the two approaches remain architecturally distinct
 `VERSION` reading and missing-file behavior are preserved, and no
 implementation or assumed approval appears. No further overlay change was
 needed.
+
+Case 3: no failure; second-opinion overlay unchanged.
 
 ## Inputs
 
@@ -373,3 +375,39 @@ Startup before dispatch does not emit output or terminate in a way that prevents
 2. **Dedicated version handler.** The dispatcher recognizes the invocation and delegates reading, output, and status to a handler supplied with the installation root. This separates routing from execution and supports isolated testing, but introduces an additional interface for a small, single-use operation.
 
 Recommend **approach 1** for the narrow scope. Neither approach nor any design section is approved yet.
+
+### Case 3 — second-opinion, phase one (session 01a08370-79ce-7e53-ac77-05fed1f851b0)
+
+## Recommendation
+
+**Migrate to a single SQLite database.** Not because of the data volume or hypothetical future queries, but because concurrent updates already require a reliable transaction boundary. I would rather delegate that machinery to SQLite than maintain a custom file-update protocol. SQLite runs inside the CLI process, so it preserves offline operation without a background service. ([sqlite.org](https://sqlite.org/aff_short.html))
+
+Keep the migration small: one row per user containing the existing JSON document. For updates, use **`BEGIN IMMEDIATE` → read current settings → apply only requested changes → write → `COMMIT`**. This serializes the entire read–modify–write operation; merely putting a stale document’s final write inside a transaction would not protect unrelated changes. Report success only after commit. ([sqlite.org](https://sqlite.org/isolation.html))
+
+## Top Material Risks
+
+- **Cross-user contention:** SQLite permits only one writer at a time, including across different users. Keep transactions short, use bounded waiting/retry, and return an explicit error on exhaustion. Without write-frequency and latency requirements, I would not promise contention is negligible. ([sqlite.org](https://sqlite.org/isolation.html))
+- **Human-editing regression:** The database is not a directly editable JSON file. If that workflow matters, migration requires an editing/export interface—not just a storage change. This could outweigh my correctness-maintenance rationale. ([sqlite.org](https://sqlite.org/fileformat.html))
+- **Cutover and recovery scope:** My architectural concern is replacing independent files with one shared authoritative store. Require a validated, single-authority cutover and retain a pre-migration backup; do not leave old CLI versions silently writing obsolete JSON files.
+
+## Forcing Questions
+
+- **Must users edit settings directly with ordinary editors, or is a CLI-mediated editing workflow acceptable?** Essential direct editing would push me toward retaining JSON.
+- **What peak write concurrency and maximum acceptable command delay must be supported?** Heavy writes distributed across users, with tight latency limits, could favor per-user storage.
+- **Are these application profiles under one OS identity, or separate OS users requiring filesystem-enforced isolation?** Separate permission boundaries would make me reject one shared database.
+
+## Serious Alternative
+
+**Retain per-user JSON, but implement a complete cooperative update protocol:** acquire a stable per-user interprocess lock *before reading*, read fresh contents, apply only the requested changes, write a temporary file, and atomically replace the original before releasing the lock. On POSIX systems, use a separate, persistent lock file rather than locking the file being replaced. Atomic replacement alone does not serialize read–modify–write operations. ([man7.org](https://www.man7.org/linux/man-pages/man2/flock.2.html))
+
+**This alternative wins** if direct text editing or per-user independence is a core product requirement and the team can support a tested locking/replacement implementation. Ordinary editors must either participate through a wrapper or run while CLI writers are quiescent; advisory locks do not constrain noncooperating writers. Low write frequency helps the cost argument, but never removes the concurrency requirement. ([man7.org](https://www.man7.org/linux/man-pages/man2/flock.2.html))
+
+### Case 3 — second-opinion, phase two (same session)
+
+- **BLOCKER — The completion marker certifies work that has not happened.** A crash immediately after committing `migration_complete=true` leaves an empty database; a crash halfway through leaves only some users imported. Every restart then skips the intact originals. SQLite’s atomicity applies to each transaction, not the entire sequence. Commit all imports and the marker together, or implement resumable per-user imports and publish completion only after verifying coverage. ([sqlite.org](https://sqlite.org/atomiccommit.html))
+
+- **BLOCKER — “Log and skip,” followed by deletion, destroys recovery inputs.** A single malformed file is excluded from the database and then deleted with the directory—even though its contents may be repairable. If every file fails parsing, this procedure still declares completion and deletes everything. An unresolved import failure must prevent destructive cleanup; preserve the failed originals and require repair or explicit authorization to discard them. Finishing the loop is not evidence of successful migration.
+
+- **BLOCKER — Startup exclusion is unspecified.** Stopping existing processes does not establish what happens when another CLI starts during import. Under the stated marker rule, that newcomer can treat the incomplete database as ready and read missing settings or write values that conflict with subsequent imports. Unless startup is also excluded, require a migration gate that every newly launched process checks and that remains effective until verified completion.
+
+- **TRADE-OFF — “Effectively free” excludes the work needed to make this safe.** The estimate needs to include tests for interruption at commit boundaries, malformed inputs, failed writes, restart behavior, and cleanup eligibility. Per-user transactions are not inherently wrong, but choosing them requires a recovery protocol rather than simply moving the marker to the end. The practical consequence is a real implementation and verification budget, not merely an import loop.
