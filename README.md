@@ -97,6 +97,8 @@ conflicts rather than claiming success.
 | `managed-files.sh` | The one list of managed paths both scripts source. |
 | `uninstall.sh` | Removes the symlinks and restores the backups; conservative to a fault. See Install. |
 | `tests/uninstall-test.sh` | Self-contained regression suite for both scripts (runs in a throwaway tmpdir). |
+| `tests/prompt-contract-test.sh` | Static contract checks on the prompt files: markers, byte caps, required strings, TODO schema, and the overlay no-restatement guard. |
+| `tests/prompt-contract-mutation-test.sh` | Negative tests for the checker: plants one defect per case in a temp copy and asserts the checker catches it (or, for false-positive probes, still passes). |
 | `docs/azure-openai-codex.md` | Azure OpenAI runbook: Codex config, version pin, env delivery, verification. |
 
 ## Requirements
