@@ -61,6 +61,50 @@ overlay_models() {
     | sed -E 's/.*:([^:]*):begin -->/\1/' | sort -u
 }
 
+MIN_CLAUSE_BYTES=25
+
+# normalise — one clause per line, applied identically to baseline and overlay.
+# Paragraph breaks and template slots ({intent}, {idea}, …) become boundaries
+# before the lines are joined (a copy wrapped differently still lines up, but
+# a slot or blank line can no longer glue itself onto the rule that follows);
+# then '.', ':', ';', '?' and markdown bullet separators end a clause
+# ("e.g."/"i.e." collapsed to "eg"/"ie" first — BSD sed has no \b); leading
+# and trailing punctuation is stripped; clauses under MIN_CLAUSE_BYTES dropped.
+normalise() {
+  sed -E 's/^[[:space:]]*$/@@/; s/\{[^}]*\}/@@/g' | tr '\n' ' ' \
+    | sed -E 's/([^[:alnum:]]|^)[eE]\.[gG]\./\1eg/g; s/([^[:alnum:]]|^)[iI]\.[eE]\./\1ie/g' \
+    | sed -E 's/@@/\n/g; s/ - /\n/g; s/[.:;?]+/\n/g' \
+    | sed -E 's/^[^[:alnum:]]+//; s/[^[:alnum:]]+$//; s/[[:space:]]+/ /g' \
+    | awk -v min="$MIN_CLAUSE_BYTES" 'length($0) >= min'
+}
+
+# check_no_restatement <role> <file> <model>
+# CLAUDE.md "GPT model routing": an overlay may emphasise a baseline rule but
+# must not restate its content. Any baseline clause appearing verbatim in the
+# overlay fails. Fails loudly, not open, if the baseline yields no clauses.
+check_no_restatement() {
+  local role="$1" file="$2" model="$3"
+  local clauses body c hits=0 n=0
+  clauses="$(extract "$file" "<!-- gpt-baseline:${role}:begin -->" \
+    "<!-- gpt-baseline:${role}:end -->" | normalise)"
+  if [[ -z "$clauses" ]]; then
+    fail "$file: ${role} baseline yields no clauses to compare against"
+    return
+  fi
+  body="$(extract "$file" "<!-- gpt-overlay:${role}:${model}:begin -->" \
+    "<!-- gpt-overlay:${role}:${model}:end -->" | normalise)"
+  while IFS= read -r c; do
+    n=$((n + 1))
+    if grep -qF -e "$c" <<<"$body"; then
+      fail "$file: overlay ${model} restates a baseline clause: \"${c:0:60}\""
+      hits=$((hits + 1))
+    fi
+  done <<<"$clauses"
+  if [[ "$hits" -eq 0 ]]; then
+    pass "$file: overlay ${model} restates none of ${n} baseline clauses"
+  fi
+}
+
 # check_overlay <role> <file> <model> <baseline-bytes>
 # Every overlay present is held to the same contract as the configured one:
 # both markers exactly once and in order (a missing end marker would make
@@ -85,6 +129,8 @@ check_overlay() {
   if [[ "$bytes_o" -eq 0 ]]; then
     fail "$file: overlay ${model} body is empty"
   fi
+
+  check_no_restatement "$role" "$file" "$model"
   if (( bytes_b + bytes_o <= MAX_FIXED_PROMPT_BYTES )); then
     pass "$file: ${role} baseline+overlay(${model}) ${bytes_b}+${bytes_o} bytes within ${MAX_FIXED_PROMPT_BYTES}"
   else
