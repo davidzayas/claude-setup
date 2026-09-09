@@ -361,10 +361,10 @@ Recommend **Approach 1**: the behavior is small and has one caller, so a separat
 ### F3 (fresh, session 01a0863a-642f-7c00-a5ca-aff0d196cd35)
 
 **Purpose**
-Rename one saved item without losing the user's place in the list or losing a draft after validation or API failure.
+Rename one saved item without losing the user’s place in the list or losing a draft after validation or API failure.
 
 **Approaches**
-1. **Row-owned inline editor.** Replace the item's name with a field and Save/Cancel controls; the row owns editing state. Keeps editing directly in context, but introduces row-layout changes and requires coordination to prevent simultaneous editors.
+1. **Row-owned inline editor.** Replace the item’s name with a field and Save/Cancel controls; the row owns editing state. Keeps editing directly in context, but introduces row-layout changes and requires coordination to prevent simultaneous editors.
 2. **List-owned modal dialog — recommended.** Each Rename control opens one shared dialog; the list owns the target ID, editing session, and restoration context. Makes one active rename explicit and isolates drafts from row rendering. Requires managed focus, background inertness, and pending-aware dismissal.
 3. **List-owned nonmodal editing panel.** Show a persistent side panel while retaining access to the list. Provides more room and continued list inspection, but requires rules for switching targets with an unsaved draft and more complex keyboard navigation.
 
