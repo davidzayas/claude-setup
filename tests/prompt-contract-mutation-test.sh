@@ -177,7 +177,7 @@ expect_caught "a non-default overlay bloated past the cap" "baseline+overlay(gpt
 
 echo "TODO.md duplicates"
 mutant t1
-printf -- '- [ ] prompt-variant: role=ideation model=gpt-6-astra\n' >> "$M/TODO.md"
+printf -- '- [x] prompt-variant: role=ideation model=gpt-6-astra — done\n- [ ] prompt-variant: role=ideation model=gpt-6-astra\n' >> "$M/TODO.md"
 expect_caught "open prompt-variant entry duplicating a ticked one" "TODO.md: duplicate role/model pairs: role=ideation model=gpt-6-astra"
 mutant t2
 printf -- '- [x] prompt-variant: role=review model=gpt-old — replaced; see role=review model=gpt-new\n- [ ] prompt-variant: role=review model=gpt-new\n' >> "$M/TODO.md"
