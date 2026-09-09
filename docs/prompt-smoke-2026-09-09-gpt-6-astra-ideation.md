@@ -32,9 +32,9 @@ L1: 3056 + 256 + 4,608 = 7,920. L2: 3914 + 610 + 14,080 = 18,604.
 | F1 | fresh | F1-A | FAIL | 2041 / 270 | 01a08637-82fd-73a1-973e-cba4c207ffb5 | One question, but asks measurement-first-vs-caching-required strategy, not the cache target/slow operation. |
 | F2 | fresh | F2-A | PASS | 2494 / 1964 | 01a08638-b1dd-7cc1-8365-b4dbe6cc1873 | No clarification; 2 distinct approaches (dispatcher-owned vs dedicated module) with trade-offs, recommendation, all categories explicit. |
 | F3 | fresh | F3-A | PASS | 3278 / 2852 | 01a0863a-642f-7c00-a5ca-aff0d196cd35 | Straight to 3 approaches differing in interaction structure (inline/modal/panel); no question; recommendation; categories explicit; no architecture. |
-| L1 | live | L1-Q1 | NOT RUN | | | |
-| L1 | live | L1-Q2 | NOT RUN | | | |
-| L1 | live | L1-A | NOT RUN | | | |
+| L1 | live | L1-Q1 | PASS | 3056 / 154 | 01a08648-64cf-7f81-8811-6a251f6e1906 | Exactly one question (A: abort entire import vs. B: reject-and-continue) addressing D_INVALID only; no recap, no approaches, no mention of D_DUPLICATE. |
+| L1 | live | L1-Q2 | PASS | 143 / 182 | 01a08648-64cf-7f81-8811-6a251f6e1906 | Exactly one question about the other unresolved fact (D_DUPLICATE: skip-vs-update on email match); first answer not reopened or recapped. |
+| L1 | live | L1-A | PASS | 113 / 2310 | 01a08648-64cf-7f81-8811-6a251f6e1906 | No clarification; 2 distinct approaches (application-service orchestration vs. UI-controller orchestration) differing in orchestration ownership; both preserve skip-existing/reject-invalid, normalized identity, rollback, and reporting; all categories explicit; checkable success criteria; no reopened facts, no architecture. |
 | L2 | live | L2-A | NOT RUN | | | |
 | L2 | live | L2-ARCH | NOT RUN | | | |
 | L2 | live | L2-COMP | NOT RUN | | | |
@@ -270,6 +270,9 @@ END LIVE CHECKPOINT
 ### L1
 | Step | Dispatched (bytes) | Returned (bytes) | Accumulated | Rule / message | Gate check before dispatch |
 |---|---|---|---|---|---|
+| 1 (seed) | 3056 | 154 | 3210 | seed | gate: 0 + 3056 + 768 = 3824 -> OK |
+| 2 (continuation 1) | 143 | 182 | 3535 | rule 1 → D_INVALID exact reply sent | gate: 3210 + 143 + 768 = 4121 -> OK |
+| 3 (continuation 2) | 113 | 2310 | 5958 | rule 2 → D_DUPLICATE exact reply sent | gate: 3535 + 113 + 3072 = 6720 -> OK |
 
 ### L2
 | Step | Dispatched (bytes) | Returned (bytes) | Accumulated | Rule / message | Gate check before dispatch |
@@ -321,6 +324,48 @@ Expected — `F3-A`: proceeds directly to 2–3 approaches (no requirements ques
 - **Verifiable success criteria covering validation, persistence, failure, keyboard:** "Boundary tests accept 1 and 80 code points and reject 0 and 81 after trimming" (validation); "Exactly one request for each accepted changed-name submission" (persistence path via the rename API); "Failure retains the exact draft; all specified exits restore the captured list context" (failure); "The entire interaction works without a pointer, with announced errors and observable focus restoration" (keyboard). None of this reduces to "easy to use." Holds.
 - **Risky assumptions quoted:** "Proposed interpretation: normalization means trimming only, with case-sensitive comparison against the trimmed original name—not case folding or Unicode canonicalization." and "Reused UI controls must not be assumed to block implicit dismissal while pending or restore focus without changing scroll; both require verification." Holds.
 - **No architecture, no assumed selection/approval:** the response closes "No approach or design section is approved yet," and contains no architecture draft (no components/data-flow/error-handling/testing language). No closing selection question is asked, but the Expected paragraph only *permits* one, it does not require it. Holds.
+
+**Verdict: PASS.** Every element of the Expected paragraph is satisfied with quoted evidence.
+
+### L1-Q1
+
+Expected — `L1-Q1`: exactly one relevant question and nothing else, with optional choices integral to that question; asks for either existing-contact collision behavior or the fate of invalid rows; does not combine the decisions into a package choice, assume either policy, recap the context, propose approaches, or ask about already specified facilities, input format, scale, or interaction stages.
+
+Quoted question (session 01a08648-64cf-7f81-8811-6a251f6e1906): "If any row is invalid, should the import **A)** abort the entire import with no changes, or **B)** reject invalid rows and continue processing valid rows?"
+
+- **Decision requested:** `D_INVALID` — whether invalid rows abort the entire import or are rejected while remaining valid rows import. The question names exactly this choice ("abort the entire import" vs. "reject invalid rows and continue processing valid rows"). Holds.
+- **Structure:** one sentence, one question mark, two lettered options integral to that single question. No recap of the project context, no proposed approaches, no mention of `D_DUPLICATE`, and no question about already-specified facilities (file format, size limit, or interaction stages are not raised). Holds.
+- **Rule matched:** rule 1 — "a compliant question may address either `D_DUPLICATE` or `D_INVALID`. Send only that fact's exact reply and mark only that fact resolved." This is a clean, single-fact `D_INVALID` question.
+
+**Verdict: PASS.** Reply sent: the exact `D_INVALID` reply — "Reject invalid rows and import the remaining eligible valid rows. Include each rejected row's number and validation reason in the final result." `D_DUPLICATE` was not disclosed.
+
+### L1-Q2
+
+Expected — `L1-Q2`: after one fixed answer, exactly one question about the other unresolved policy and nothing else; a second question is necessary; the first answer is preserved without reopening or recapping it; no premature approaches; no silent fill of the remaining policy.
+
+Quoted question (same session): "When a valid row’s normalized email matches an existing contact, should the import **A)** skip it and preserve the stored name, or **B)** update that contact’s name from the CSV?"
+
+- **Decision requested:** `D_DUPLICATE` — what happens to a row whose normalized email matches an existing contact. The question names exactly this choice ("skip it and preserve the stored name" vs. "update that contact's name from the CSV"). Holds.
+- **Necessity of a second question:** resolving `D_INVALID` (abort vs. reject-and-continue) does not determine collision behavior for matching emails; this is a distinct, still-unresolved decision. Holds.
+- **No reopening/recapping the first answer:** the question contains no reference to invalid rows, validation, or aborting; the settled `D_INVALID` fact is neither restated nor questioned. Holds.
+- **Single question, nothing else:** one sentence, one question mark, two lettered options integral to that question; no approaches, no design section, no confirmation request for the first answer. Holds.
+- **Rule matched:** rule 2 — "the question must address the other, still-unresolved fact. Send its exact reply."
+
+**Verdict: PASS.** Reply sent: the exact `D_DUPLICATE` reply — "Skip rows whose normalized email already exists in the address book, and leave those existing contacts unchanged."
+
+### L1-A
+
+Expected — `L1-A`: after the second fixed answer, clarification stops; 2–3 substantively distinct, compliant approaches with concrete trade-offs and one recommendation; distinctness in ownership/organization of classification, policy enforcement, orchestration, or transactional writing (not interchangeable parsing/collection utilities); all approaches preserve skip-existing, reject-invalid/import-valid, normalized identity, final reporting, and rollback on storage failure; purpose, constraints, measurable success criteria, and risky assumptions explicit; success criteria checkable for one-new/one-duplicate/one-invalid row (or equivalent); no reopened facts; no architecture; no assumed selection.
+
+- **Clarification has stopped:** the response contains no question mark anywhere; it opens directly with "**Purpose**" and proceeds through Constraints, Measurable Success Criteria, Risky Assumptions, and Approaches. Holds.
+- **2–3 distinct, compliant approaches:** "1. **Application-service orchestration — recommended.** A small import service coordinates validation, matching, the transaction, and the structured result; the UI handles selection, confirmation, and display." vs. "2. **UI-controller orchestration.** The existing import controller directly coordinates those facilities and builds the summary." Two approaches differing in *orchestration ownership* (dedicated import service vs. existing UI controller) — matches the Expected paragraph's named axis ("orchestration"), not an interchangeable utility swap. Holds.
+- **Trade-offs and recommendation:** approach 1 — "Adds one boundary but keeps policy and rollback reporting testable independently of UI behavior"; approach 2 — "Requires fewer structural additions, but couples transaction handling and import policy to UI lifecycle and makes isolated testing harder." Recommendation: "Recommend **approach 1** for its clearer ownership of import policy and committed results." Holds.
+- **All approaches preserve required behaviors:** the shared Constraints state "Validate before matching existing contacts. Reject invalid rows with their existing row-numbered reasons; skip valid matches without changing stored contacts" (reject-invalid/import-valid and skip-existing) and "Store each new contact's name and trimmed, lowercased email" (normalized identity); Measurable Success Criteria state "Storage failure rolls back every attempted insertion" (rollback) and "every rejected row includes its source row number and validation reason" (final reporting). Neither approach description contradicts these shared constraints. Holds.
+- **Purpose:** "Import eligible CSV contacts into the local address book without changing existing contacts, and clearly account for every row." Holds.
+- **Constraints:** as quoted above, plus "Accept UTF-8 files with `name,email` headers and at most 500 data rows; normalized emails do not repeat within a file." Holds.
+- **Measurable, checkable success criteria:** "On successful completion, `inserted + skipped + rejected = total data rows`; every rejected row includes its source row number and validation reason," and "Existing contacts remain unchanged, and only valid, previously absent email identities are inserted." Applied to one valid new row, one otherwise-valid existing-email row, and one invalid row, this general formulation entails exactly the checkable outcome the Expected paragraph describes (adds one, skips one, rejects one, leaves the existing contact unchanged, reports the invalid row's location and reason) — an equivalent testable formulation. Holds.
+- **Risky assumptions quoted:** "Stored emails might not already be normalized; matching must use normalized identity rather than assume raw string equality," and "Successful individual insert calls do not establish import success; committed counts must wait for transaction completion." Holds.
+- **No reopened facts, no architecture, no assumed selection:** neither `D_DUPLICATE` nor `D_INVALID` is questioned or reversed (both appear only as settled constraints); no components/data-flow/error-handling/testing draft appears; the response closes "Approach selection and design approval remain with Claude and the human," making no claim of selection or approval. No closing approach-selection question is asked, which the Expected paragraph only permits, not requires. Holds.
 
 **Verdict: PASS.** Every element of the Expected paragraph is satisfied with quoted evidence.
 
@@ -391,6 +436,75 @@ Rename one saved item without losing the user’s place in the list or losing a 
 
 **Recommendation**
 Choose **2: the list-owned modal dialog** for its explicit single-item lifecycle and limited interaction rules. No approach or design section is approved yet.
+
+### L1 — seed response (live, session 01a08648-64cf-7f81-8811-6a251f6e1906)
+
+**Message sent (seed — identical to the `### L1 (seed)` composed prompt above, 3056 bytes):**
+
+You are an independent requirements ideator for:
+
+Project context: A single-user local address-book app already has a file picker, CSV parser/validator, and transactional contact repository. Files are UTF-8 with name,email headers and at most 500 data rows. Validation and its row-numbered error messages already exist. Email identity is determined by trimming surrounding whitespace and lowercasing. Files from this source do not repeat a normalized email within the same file, but may match contacts already stored. Invalid rows are identified before existing-contact matching. Unreadable files and incorrect headers fail before any writes. Storage failures roll back all writes attempted by that import. There is no network access, background processing, concurrent editing, field mapping, or preview/edit stage. The interaction is file selection, one Import confirmation, then a final summary of disposition counts and row-numbered rejection reasons.
+Idea: Add CSV contact import using these existing facilities. Each accepted new contact stores its name and normalized email. Two product policies are not decided: whether a row matching an existing email should be skipped or update that contact's name, and whether invalid rows should abort the entire import or be rejected while the remaining valid rows are imported.
+
+Claude alone facilitates the discussion with the human and verifies approval. Your goal is an approved, implementation-ready design. Success requires the purpose, constraints, measurable success criteria, risky assumptions, selected approach, and every approved design section to be explicit.
+
+During clarification, return exactly ONE decision-focused question and nothing else. Prefer multiple-choice options when practical. Ask only questions whose answers could materially change the design, and never recap settled answers.
+
+Once remaining uncertainty would not materially change the design, stop questioning. Propose 2–3 genuinely distinct approaches, explain their trade-offs, and recommend one. Decompose the work only when the parts are independently useful and implementable.
+
+After Claude relays the selected approach, draft exactly one design section per response, in this order: architecture, components, data flow, error handling, testing. Stop after each section for Claude's verification; revise it until approved before advancing.
+
+Do not implement anything, assume human approval, or act as Claude's substitute.
+
+The baseline is authoritative; this overlay only tunes communication. Make the highest-impact unresolved decision easy to answer, without recaps or process narration. When clarification is unnecessary, move directly to distinct approaches and concrete trade-offs, keeping alternatives distinct in substance (for instance, where responsibility lives), not merely in which primitive or utility performs an identical step. State the purpose, constraints, measurable success criteria, and risky assumptions explicitly alongside the approaches — compression trims prose, not these required categories.
+
+**Assistant response (154 bytes):**
+
+If any row is invalid, should the import **A)** abort the entire import with no changes, or **B)** reject invalid rows and continue processing valid rows?
+
+### L1 — continuation 1: rule 1 → D_INVALID reply → response
+
+**Message sent (143 bytes):**
+
+Reject invalid rows and import the remaining eligible valid rows. Include each rejected row's number and validation reason in the final result.
+
+**Assistant response (182 bytes):**
+
+When a valid row’s normalized email matches an existing contact, should the import **A)** skip it and preserve the stored name, or **B)** update that contact’s name from the CSV?
+
+### L1 — continuation 2: rule 2 → D_DUPLICATE reply → response
+
+**Message sent (113 bytes):**
+
+Skip rows whose normalized email already exists in the address book, and leave those existing contacts unchanged.
+
+**Assistant response (2310 bytes):**
+
+**Purpose**
+Import eligible CSV contacts into the local address book without changing existing contacts, and clearly account for every row.
+
+**Constraints**
+- Reuse the existing picker, parser/validator, and transactional repository.
+- Accept UTF-8 files with `name,email` headers and at most 500 data rows; normalized emails do not repeat within a file.
+- Validate before matching existing contacts. Reject invalid rows with their existing row-numbered reasons; skip valid matches without changing stored contacts.
+- Store each new contact’s name and trimmed, lowercased email.
+- Keep file selection → one Import confirmation → final summary. No network, background processing, concurrent editing, field mapping, or preview/edit stage.
+
+**Measurable Success Criteria**
+- On successful completion, `inserted + skipped + rejected = total data rows`; every rejected row includes its source row number and validation reason.
+- Existing contacts remain unchanged, and only valid, previously absent email identities are inserted.
+- Unreadable files and incorrect headers produce zero writes.
+- Storage failure rolls back every attempted insertion. The summary reports zero committed additions and distinguishes rows not imported because of rollback from validation rejections.
+
+**Risky Assumptions**
+- Stored emails might not already be normalized; matching must use normalized identity rather than assume raw string equality.
+- Successful individual insert calls do not establish import success; committed counts must wait for transaction completion.
+
+**Approaches**
+1. **Application-service orchestration — recommended.** A small import service coordinates validation, matching, the transaction, and the structured result; the UI handles selection, confirmation, and display. Adds one boundary but keeps policy and rollback reporting testable independently of UI behavior.
+2. **UI-controller orchestration.** The existing import controller directly coordinates those facilities and builds the summary. Requires fewer structural additions, but couples transaction handling and import policy to UI lifecycle and makes isolated testing harder.
+
+Recommend **approach 1** for its clearer ownership of import policy and committed results. Approach selection and design approval remain with Claude and the human.
 
 ## Acceptance
 
