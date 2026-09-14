@@ -1,0 +1,216 @@
+<title>Engineering Time Capitalization</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --paper:#F6F7F5; --surface:#FFFFFF; --ink:#1C2321; --ink-2:#4F5A56; --ink-3:#7A857F;
+  --rule:#D5DBD7; --rule-soft:#E6EAE7; --capex:#0F8A6A; --opex:#C4731A;
+  --capex-soft:#E3F2EC; --opex-soft:#F8ECDD; --focus:#0F8A6A;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#171A19; --surface:#1E2321; --ink:#E6EAE7; --ink-2:#AEB8B2; --ink-3:#7F8A84;
+    --rule:#2E3533; --rule-soft:#262C2A; --capex:#3DAA8A; --opex:#C8842E;
+    --capex-soft:#1C2F29; --opex-soft:#33281B; --focus:#3DAA8A;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#171A19; --surface:#1E2321; --ink:#E6EAE7; --ink-2:#AEB8B2; --ink-3:#7F8A84;
+  --rule:#2E3533; --rule-soft:#262C2A; --capex:#3DAA8A; --opex:#C8842E;
+  --capex-soft:#1C2F29; --opex-soft:#33281B; --focus:#3DAA8A;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:15px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.page{max-width:920px;margin:0 auto;padding:56px 28px 80px}
+h1,h2,h3{font-family:"Newsreader","Iowan Old Style",Georgia,serif;font-weight:500;letter-spacing:-.01em;text-wrap:balance;margin:0}
+h1{font-size:44px;line-height:1.05;font-variation-settings:"opsz" 72}
+h2{font-size:26px;line-height:1.2;margin-bottom:6px}
+h3{font-size:18px;line-height:1.3}
+p{margin:0;max-width:66ch}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+
+header{display:grid;grid-template-columns:1fr auto;gap:24px 40px;align-items:end;padding-bottom:28px;border-bottom:1px solid var(--ink)}
+header .lede{margin-top:14px;color:var(--ink-2);font-size:16px}
+.meta{display:grid;grid-template-columns:auto auto;gap:6px 18px;font-size:13px;color:var(--ink-2);align-self:end;white-space:nowrap}
+.meta dt{color:var(--ink-3);margin:0}
+.meta dd{margin:0;font-variant-numeric:tabular-nums;color:var(--ink)}
+
+section{padding:40px 0 8px}
+section + section{border-top:1px solid var(--rule)}
+.section-head{display:flex;justify-content:space-between;align-items:baseline;gap:24px;margin-bottom:22px;flex-wrap:wrap}
+.section-head p{color:var(--ink-2)}
+
+/* ---------- Headline figure ---------- */
+.headline{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:36px;align-items:start}
+.hero-num{font-family:"Newsreader",Georgia,serif;font-size:96px;line-height:.9;font-weight:400;letter-spacing:-.03em;color:var(--capex);font-variant-numeric:tabular-nums;font-variation-settings:"opsz" 72}
+.hero-num small{font-size:40px;letter-spacing:0;margin-left:4px}
+.hero-cap{margin-top:14px;color:var(--ink-2)}
+.hero-cap b{color:var(--ink);font-weight:600}
+.legend{display:flex;gap:18px;font-size:13px;color:var(--ink-2);margin-bottom:14px;align-items:center;flex-wrap:wrap}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.sw{width:12px;height:12px;border-radius:3px;display:inline-block}
+.sw.capex{background:var(--capex)}
+.sw.opex{background:var(--opex)}
+.sw.opex.hatch{background:repeating-linear-gradient(135deg,var(--opex) 0 2px,transparent 2px 4px),var(--opex-soft)}
+
+.weights{display:grid;gap:18px}
+.weight{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:center}
+.weight .label{font-size:13px;color:var(--ink-2);line-height:1.3}
+.weight .label b{display:block;color:var(--ink);font-weight:600;font-size:14px}
+.bar{display:flex;gap:2px;height:30px;border-radius:5px;overflow:hidden;background:var(--rule-soft)}
+.seg{position:relative;display:flex;align-items:center;padding:0 10px;font-size:13px;font-weight:600;color:#fff;font-variant-numeric:tabular-nums;min-width:0;cursor:default;transition:filter .12s}
+.seg.capex{background:var(--capex)}
+.seg.opex{background:var(--opex);background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.22) 0 2px,transparent 2px 5px)}
+.seg:hover,.seg:focus-visible{filter:brightness(1.08)}
+.seg .v{white-space:nowrap;overflow:hidden;text-overflow:clip}
+.tip{position:fixed;pointer-events:none;background:var(--ink);color:var(--paper);font-size:12.5px;line-height:1.4;padding:7px 10px;border-radius:5px;box-shadow:0 4px 16px rgba(0,0,0,.18);z-index:10;opacity:0;transform:translate(-50%,calc(-100% - 10px));transition:opacity .1s;font-variant-numeric:tabular-nums;white-space:nowrap}
+.tip.on{opacity:1}
+.tip b{font-weight:600}
+
+/* ---------- Project table ---------- */
+.tablewrap{overflow-x:auto;margin:0 -8px}
+table{border-collapse:collapse;width:100%;min-width:760px;font-size:14px}
+th{text-align:left;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);padding:0 8px 10px;border-bottom:1px solid var(--ink);white-space:nowrap}
+td{padding:12px 8px;border-bottom:1px solid var(--rule);vertical-align:top}
+tbody tr:last-child td{border-bottom:1px solid var(--ink)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+td.proj{font-weight:600;white-space:nowrap}
+td.sum{color:var(--ink-2);font-size:13.5px;line-height:1.5;min-width:320px}
+td.split{width:170px}
+.mini{display:flex;gap:2px;height:8px;border-radius:3px;overflow:hidden;background:var(--rule-soft);margin-top:7px}
+.mini i{display:block;height:100%}
+.mini .c{background:var(--capex)}
+.mini .o{background:var(--opex);background-image:repeating-linear-gradient(135deg,rgba(255,255,255,.28) 0 1px,transparent 1px 3px)}
+.pct{display:flex;justify-content:space-between;font-size:12.5px;font-variant-numeric:tabular-nums}
+.pct .c{color:var(--capex);font-weight:600}
+.pct .o{color:var(--opex);font-weight:600}
+.pct .z{color:var(--ink-3);font-weight:400}
+tfoot td{font-weight:600;border-bottom:none;padding-top:12px}
+tfoot td.sum{font-weight:400}
+
+/* ---------- Notes ---------- */
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 40px}
+.note h3{margin-bottom:8px}
+.note p{color:var(--ink-2)}
+.rule-box{border-left:3px solid var(--capex);padding:4px 0 4px 18px;margin:20px 0 4px;max-width:66ch}
+.rule-box p{color:var(--ink)}
+.rule-box .eyebrow{margin-bottom:6px;color:var(--capex)}
+.method{list-style:none;padding:0;margin:0;display:grid;gap:12px;max-width:72ch;color:var(--ink-2)}
+.method li{padding-left:20px;position:relative}
+.method li::before{content:"";position:absolute;left:0;top:.62em;width:8px;height:1px;background:var(--ink-3)}
+.method b{color:var(--ink);font-weight:600}
+footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);font-size:12.5px;color:var(--ink-3);display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+
+@media (max-width:720px){
+  .page{padding:36px 18px 60px}
+  h1{font-size:34px}
+  header{grid-template-columns:1fr}
+  .headline{grid-template-columns:1fr}
+  .hero-num{font-size:72px}
+  .weight{grid-template-columns:1fr;gap:6px}
+  .notes{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media print{body{background:#fff}.page{padding:0}.tip{display:none}}
+</style>
+
+<div class="page">
+<header>
+  <div>
+    <div class="eyebrow">Engineering time · AI-assisted development</div>
+    <h1 style="margin-top:10px">Engineering Time Capitalization</h1>
+    <p class="lede">Capex and opex split of Claude Code development sessions across %%N_PROJECTS%% product repositories, %%PERIOD_LEDE%%.</p>
+  </div>
+  <dl class="meta">
+    <dt>Period</dt><dd>%%PERIOD%%</dd>
+    <dt>Prepared by</dt><dd>%%PREPARED_BY%%</dd>
+    <dt>Prepared for</dt><dd>%%PREPARED_FOR%%</dd>
+    <dt>Basis</dt><dd>%%BASIS%%</dd>
+  </dl>
+</header>
+
+<section>
+  <div class="headline">
+    <div>
+      <div class="eyebrow">Capitalizable share of active time</div>
+      <div class="hero-num" style="margin-top:10px">%%CAPEX_PCT%%<small>%</small></div>
+      <p class="hero-cap">%%HERO_CAPTION%%</p>
+    </div>
+    <div>
+      <div class="legend" aria-hidden="true"><span><i class="sw capex"></i>Capex</span><span><i class="sw opex hatch"></i>Opex</span></div>
+      <div class="weights" id="weights">
+%%WEIGHT_ROWS%%
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head">
+    <h2>By project</h2>
+    <p>Sessions grouped by repository, ordered by active hours.</p>
+  </div>
+  <div class="tablewrap">
+  <table>
+    <thead><tr>
+      <th>Project</th><th class="num">Sessions</th><th class="num">Active h</th><th>Capex / opex</th><th>What the work was</th>
+    </tr></thead>
+    <tbody>
+%%PROJECT_ROWS%%
+    </tbody>
+    <tfoot><tr>
+      <td>Total</td><td class="num">%%N_SESSIONS%%</td><td class="num">%%TOTAL_H%%</td>
+      <td class="split">%%TOTAL_SPLIT%%</td>
+      <td class="sum">%%CAPEX_H%% h capex · %%OPEX_H%% h opex</td>
+    </tr></tfoot>
+  </table>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>Classification basis</h2></div>
+  <div class="rule-box">
+    <div class="eyebrow">Rule applied</div>
+    <p>%%RULE_TEXT%%</p>
+  </div>
+  <div class="notes" style="margin-top:28px">
+    <div class="note">
+      <h3>Why the capex projects qualify</h3>
+      <p>%%CAPEX_RATIONALE%%</p>
+    </div>
+    <div class="note">
+      <h3>Why the opex projects do not</h3>
+      <p>%%OPEX_RATIONALE%%</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="section-head"><h2>Method</h2></div>
+  <ul class="method">
+%%METHOD_ITEMS%%
+  </ul>
+</section>
+
+<footer>
+  <span>Engineering Time Capitalization · %%PERIOD%%</span>
+  <span>Hours are approximate and derived from transcript timestamps, not a timesheet.</span>
+</footer>
+</div>
+
+<div class="tip" id="tip" role="tooltip" aria-hidden="true"></div>
+<script>
+(function(){
+  var tip=document.getElementById('tip');
+  function show(el,x,y){tip.innerHTML=el.getAttribute('data-tip');tip.style.left=x+'px';tip.style.top=y+'px';tip.classList.add('on');}
+  function hide(){tip.classList.remove('on');}
+  document.querySelectorAll('.seg').forEach(function(s){
+    s.addEventListener('mousemove',function(e){show(s,e.clientX,e.clientY);});
+    s.addEventListener('mouseleave',hide);
+    s.addEventListener('focus',function(){var r=s.getBoundingClientRect();show(s,r.left+r.width/2,r.top);});
+    s.addEventListener('blur',hide);
+  });
+})();
+</script>

@@ -91,6 +91,7 @@ conflicts rather than claiming success.
 | `CLAUDE.md` | The pipeline policy. The core of the setup. |
 | `agents/codex-adversary.md` | Subagent that dispatches a review to GPT via the codex MCP tool, quality-gates the response, and returns a structured report. Verifies findings against the code before passing them on — cross-model review only earns its keep if hallucinated findings die there. |
 | `skills/gpt-brainstorming/SKILL.md` | Fork of `superpowers:brainstorming` where GPT generates and Claude facilitates, verifies against the codebase, and scribes. |
+| `skills/capex-opex-report/` | `/capex-opex-report` — monthly capex/opex capitalization report for finance, built from local session transcripts. Scripts count active hours per project; Claude classifies each session by product lifecycle stage; the result is published as an artifact. See its README. |
 | `commands/adversarial-review.md` | `/adversarial-review` — stage 3 on demand. |
 | `commands/gpt-brainstorm.md` | `/gpt-brainstorm` — stage 1 on demand. |
 | `settings.json` | Plugins and UI prefs. Merge by hand. |

@@ -131,6 +131,10 @@ rejects malformed or duplicate entries.
   independent GPT review; every finding is fixed or explicitly rebutted —
   never silently dropped. `/adversarial-review` runs it on demand;
   `/gpt-brainstorm` gives you a two-model second opinion on anything.
+- **Month end.** Ask for "the capex/opex report for the last 30 days" (or
+  `/capex-opex-report`). The skill scans your local transcripts, classifies
+  each session by whether the product was in service, and publishes a
+  finance-ready artifact. Name any personal repos to exclude.
 - If the codex MCP server is down, the pipeline **stops and tells you**
   rather than quietly substituting Claude for GPT's role — a Claude review
   of Claude's code is not a second opinion.
