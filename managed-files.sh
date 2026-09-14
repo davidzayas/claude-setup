@@ -9,4 +9,11 @@ MANAGED_FILES=(
   commands/adversarial-review.md
   commands/gpt-brainstorm.md
   skills/gpt-brainstorming/SKILL.md
+  skills/capex-opex-report/SKILL.md
+  skills/capex-opex-report/README.md
+  skills/capex-opex-report/scripts/scan_sessions.py
+  skills/capex-opex-report/scripts/grep_session.py
+  skills/capex-opex-report/scripts/render_report.py
+  skills/capex-opex-report/templates/report.html
+  skills/capex-opex-report/examples/classification-2026-09.json
 )

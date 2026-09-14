@@ -1,0 +1,156 @@
+{
+ "since": "2026-08-15",
+ "until": "2026-09-14",
+ "prepared_by": "David Zayas",
+ "prepared_for": "Finance",
+ "projects": [
+  {
+   "name": "sales-intelligence-platform",
+   "summary": "Ran the PR review pipeline over roughly 60 PRs for a product still in alpha: Morning brief, Bookings live layer, Rank in Motion, Actions from Ask, and related hardening. Haircut covers config-only and doc-only PRs.",
+   "sessions": [
+    {
+     "id": "f0f5c76f",
+     "hours": 26.97,
+     "capex_share": 0.9
+    }
+   ]
+  },
+  {
+   "name": "spark-mobile-app",
+   "summary": "Reviewed and fixed the PR 6 to 8 stack, ran the review pipeline on PRs 97 to 182 (offline caching, TestFlight workflow, Calendar epic, realtime voice detection, beta hardening, four lightning-round bug sweeps), and generated a local iOS Xcode project under the enterprise team.",
+   "sessions": [
+    {
+     "id": "fab89c63",
+     "hours": 12.0,
+     "capex_share": 0.9
+    },
+    {
+     "id": "c301df57",
+     "hours": 10.57,
+     "capex_share": 0.92
+    },
+    {
+     "id": "c0b77dfa",
+     "hours": 0.03,
+     "capex_share": 0
+    }
+   ]
+  },
+  {
+   "name": "app-distribution-website",
+   "summary": "First deployment to Railway, temporary access password, users/roles/groups administration, icon upload, archived-app delete, and Auth0 PKCE login with the Okta connection claim.",
+   "sessions": [
+    {
+     "id": "c1895419",
+     "hours": 21.29,
+     "capex_share": 1.0
+    }
+   ]
+  },
+  {
+   "name": "claude-setup",
+   "summary": "Documented Codex CLI and MCP prerequisites, verified the Codex 0.149.1 Azure fix, migrated the cross-model pipeline to gpt-6-astra, tuned prompts, hardened tests, removed the GitHub plugin, cleared the TODO backlog.",
+   "sessions": [
+    {
+     "id": "30e8edab",
+     "hours": 8.65,
+     "capex_share": 0
+    },
+    {
+     "id": "8cc5ade1",
+     "hours": 1.7,
+     "capex_share": 0
+    }
+   ]
+  },
+  {
+   "name": "pr-review-pipeline",
+   "summary": "Built and published the PR review pipeline plugin as a public repository, added the claim protocol and status command, shipped v1.1.0 and v1.1.1; 19 automated sandbox test runs folded in.",
+   "sessions": [
+    {
+     "id": "6ab07ce6",
+     "hours": 4.86,
+     "capex_share": 1.0
+    }
+   ],
+   "sandbox": {
+    "runs": 19,
+    "hours": 1.08,
+    "capex_share": 1.0
+   }
+  },
+  {
+   "name": "ai-command-center",
+   "summary": "Closed hand-test findings on the program-targets feature branch (Economics section, whole-page save), then designed and opened a PR for the simplified ROI scorecard table view.",
+   "sessions": [
+    {
+     "id": "99b6586a",
+     "hours": 5.46,
+     "capex_share": 0.95
+    }
+   ]
+  },
+  {
+   "name": "price-compare-extension",
+   "summary": "Packaged the 0.22.0 store release (host move, PennVet, alarms) and reworked the new chunked order-history sync to accumulate locally before uploading to ICS.",
+   "sessions": [
+    {
+     "id": "beebdeea",
+     "hours": 2.72,
+     "capex_share": 0.85
+    }
+   ]
+  },
+  {
+   "name": "inventorybuddy",
+   "summary": "Reviewed and merged PR 168 (receiving dispense-quantity flow with telemetry build version), then ran the pipeline on PRs 171 to 173 (file-based catalog cache, cache-write resilience, zero on-hand mapping) for the TestFlight-only beta; one pull-latest sync.",
+   "sessions": [
+    {
+     "id": "a9f63efc",
+     "hours": 1.51,
+     "capex_share": 0.95
+    },
+    {
+     "id": "4eecbca6",
+     "hours": 0.03,
+     "capex_share": 0
+    }
+   ]
+  },
+  {
+   "name": "status-page",
+   "summary": "Reviewed and merged PR 28 (incident display), PR 34 (internal status page), and PR 35 (multi-product deployment serving Pulse and Comms from one image).",
+   "sessions": [
+    {
+     "id": "df2ecdd2",
+     "hours": 1.05,
+     "capex_share": 1.0
+    },
+    {
+     "id": "5c842e87",
+     "hours": 0.46,
+     "capex_share": 1.0
+    }
+   ]
+  },
+  {
+   "name": "b2b-ecommerce-cc",
+   "summary": "Evaluated the VetSuite codebase: pulled main, ran tests and a production build smoke check, started it locally against QA.",
+   "sessions": [
+    {
+     "id": "c19eed48",
+     "hours": 0.49,
+     "capex_share": 0
+    }
+   ]
+  }
+ ],
+ "capex_rationale": "Every capex project is pre-release or actively adding capability. Sales-intelligence-platform is explicitly in alpha. Spark-mobile-app is in beta with its TestFlight release workflow being set up. App-distribution-website is deployed but not open to users pending Auth0. Fix and hardening PRs on those products are development-stage work. Small haircuts cover configuration-only and documentation-only PRs.",
+ "opex_rationale": "Claude-setup is upkeep of the developer tooling pipeline: prerequisites documentation, a model migration, prompt tuning, and backlog cleanup. It produces no product asset. B2b-ecommerce-cc was an assessment of an existing codebase, not construction.",
+ "excluded": [
+  "oryn",
+  "sat-prep"
+ ],
+ "excluded_reason": "personal projects",
+ "extra_method_notes": []
+}
