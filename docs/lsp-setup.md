@@ -1,4 +1,12 @@
-# Claude Code LSP Plugins — macOS Setup
+# LSP setup — language servers and Claude Code plugins (macOS)
+
+This is the runbook for the kit in `lsp/`. It is **separate from `install.sh`**:
+the repo installer never runs it, and `uninstall.sh` does not undo it. What
+it installs (Homebrew formulae, the .NET SDK, `csharp-ls`, a wrapper script,
+one `~/.zprofile` line, Claude Code plugins) stays until you remove it by
+hand (see Uninstalling). How sessions *use* these servers is set by
+`CLAUDE.md` → "Code intelligence" (built-in `LSP` tool first; Serena only
+on request).
 
 This kit sets up Claude Code's official **code intelligence (LSP) plugins** for nine languages: C/C++, C#, Go, Java, Kotlin, Python, Rust, Swift, and TypeScript.
 
@@ -20,25 +28,25 @@ Each plugin only tells Claude Code how to talk to a language server. It does **n
 - **An admin password.** The .NET SDK installer asks for it.
 - **About 3–5 GB of free disk space** for the JDK, .NET, LLVM (if needed), and the language servers.
 - **Xcode from the App Store** if you work in Swift. The Command Line Tools alone are enough for everything else. The script installs them if they're missing.
-- **Homebrew.** If it isn't installed, the script installs it.
+- **Homebrew.** If it isn't installed, the binaries script **downloads and runs
+  Homebrew's official installer** (`curl … | bash` from github.com/Homebrew).
+  Install Homebrew yourself first if you'd rather not.
 
 ---
 
 ## Quick start
 
-Unzip the kit, open Terminal in the unzipped folder, and run:
+From the root of this repo:
 
 ```bash
-chmod +x install-lsp-binaries.sh install-claude-lsp-plugins.sh
-
 # 1. Install the language servers (takes 5–15 minutes)
-./install-lsp-binaries.sh
+lsp/install-lsp-binaries.sh
 
 # 2. Reload your shell profile so PATH changes take effect
 source ~/.zprofile
 
 # 3. Install the Claude Code plugins
-./install-claude-lsp-plugins.sh
+lsp/install-claude-lsp-plugins.sh
 ```
 
 Then **start a new Claude Code session**, or run `/reload-plugins` in one that's already open.
@@ -75,18 +83,25 @@ Both scripts are safe to re-run. Anything already installed is skipped.
 The plugins script installs to **user scope** by default, meaning for you in every project. You can pass a different scope:
 
 ```bash
-./install-claude-lsp-plugins.sh user      # default – you, all projects
-./install-claude-lsp-plugins.sh project   # everyone on the repo – run from the repo root
-./install-claude-lsp-plugins.sh local     # you, this repo only
+lsp/install-claude-lsp-plugins.sh user      # default – you, all projects
+~/playground/claude-setup/lsp/install-claude-lsp-plugins.sh project   # run from the TARGET repo's root
+~/playground/claude-setup/lsp/install-claude-lsp-plugins.sh local     # likewise
 ```
 
-`project` scope writes the plugins into the repo's `.claude/settings.json`, so teammates get them when they pull. Each person still needs the binaries installed on their own machine (step 1).
+`project` and `local` write into the **current directory's** `.claude/`, so run
+them from the project you mean, by absolute path. `project` scope writes the
+plugins into that repo's `.claude/settings.json`, so teammates get them when they pull. Each person still needs the binaries installed on their own machine (step 1).
 
 ---
 
 ## Verify it works
 
-1. **Check the plugins:** Start Claude Code in any project and run `/plugin`. The **Installed** tab should list all nine plugins, and the **Errors** tab should be empty.
+0. **Read the binaries script's summary.** A `(found, with PATH warning)` line
+   for `typescript-language-server` means an nvm copy shadows Homebrew's; see
+   "TypeScript plugin stops working after switching Node versions" below.
+1. **Check the plugins:** `claude plugin list` shows each plugin's scope and
+   whether it is enabled. That proves *installed*, not *working*. Then start
+   Claude Code in any project and run `/plugin`. The **Installed** tab should list all nine plugins, and the **Errors** tab should be empty.
 2. **Test navigation:** Ask Claude something only a language server can answer precisely, such as *"Find every reference to `<some function>` in this codebase."*
 3. **Expect a delay the first time:** The first request in a large Java, Kotlin, or Rust project can take a minute or two while the server indexes. After that it's fast.
 4. **Watch for diagnostics:** When Claude Code shows something like *"Found 3 new diagnostic issues in 2 files,"* press **Ctrl+O** to read them.
@@ -184,13 +199,20 @@ claude plugin install csharp-lsp@claude-plugins-official --scope user
 The plugin installed, but Claude Code can't see the binary.
 1. **Check your terminal:** Run `which <binary>` in the same terminal you launch Claude Code from.
 2. **Reload your profile:** If the binary isn't found, run `source ~/.zprofile` or open a new terminal, then restart Claude Code.
-3. **Check where you launched from:** If you launch Claude Code from an IDE or the desktop app rather than a terminal, it may not load your shell profile the same way. Try launching `claude` from a terminal to confirm.
+3. **Check where you launched from:** If you launch Claude Code from an IDE or the desktop app rather than a terminal, it may not load your shell profile the same way. Re-sourcing `~/.zprofile` in a terminal does **not** change a session the desktop app already started. Fix the PATH that launcher sees, fully quit and restart it, and check `/plugin` → Errors again *in that session*. Launching `claude` from a terminal is a quick way to confirm this is the cause.
+4. **Don't reinstall the plugin** as a first step. The plugin is fine; the session can't see the binary.
 
 #### TypeScript plugin stops working after switching Node versions
 This happens if `typescript-language-server` was installed with `npm install -g` under nvm, fnm, or asdf. It's then only on PATH while that exact Node version is active. The current binaries script installs it with Homebrew to avoid this. If you installed it through nvm earlier, run:
 ```bash
 brew install typescript-language-server typescript
 ```
+If the nvm copy still comes first on PATH (`which typescript-language-server`
+shows `~/.nvm/...`; the binaries script reports `found, with PATH warning`),
+Claude Code keeps using it. Remove it from each Node version that has it
+(`npm uninstall -g typescript-language-server typescript` with that version
+active), or put `$(brew --prefix)/bin` ahead of nvm on PATH. Neither script
+does this for you.
 
 #### `/plugin` command not recognized
 Your Claude Code is too old. Update it with `brew upgrade claude-code`, `npm install -g @anthropic-ai/claude-code@latest`, or by re-running the native installer. Then restart.
