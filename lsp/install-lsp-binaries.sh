@@ -32,10 +32,15 @@ brew_install() {
   fi
 }
 
-# Symlink a binary into Homebrew's bin dir so it's on PATH
+# Symlink a binary into Homebrew's bin dir so it's on PATH. Replaces an
+# existing symlink (this only runs when <name> isn't found on PATH, so such a
+# link is stale), but never a regular file someone else put there.
 link_into_path() {
   local name="$1" target="$2"
-  if ln -sf "$target" "$BREW_BIN/$name"; then
+  if [[ -e "$BREW_BIN/$name" && ! -L "$BREW_BIN/$name" ]]; then
+    err "not linking $name: $BREW_BIN/$name exists and is not a symlink; left it alone"
+    FAILED+=("$name")
+  elif ln -sf "$target" "$BREW_BIN/$name"; then
     ok "linked $name -> $target"
   else
     err "could not link $name"; FAILED+=("$name")
@@ -44,7 +49,7 @@ link_into_path() {
 
 add_to_zprofile() {
   local line="$1" f="$HOME/.zprofile"
-  touch "$f"
+  touch "$f" || return 1
   grep -qxF "$line" "$f" && return 0
   # Start on a fresh line if the file doesn't end with one.
   if [[ -s "$f" && -n "$(tail -c1 "$f")" ]]; then echo >> "$f"; fi
@@ -186,7 +191,8 @@ else
     || { err ".NET 10+ SDK still not found at $DOTNET_NEW_ROOT"; FAILED+=("dotnet-sdk"); }
 fi
 
-add_to_zprofile 'export PATH="$PATH:$HOME/.dotnet/tools"'
+add_to_zprofile 'export PATH="$PATH:$HOME/.dotnet/tools"' \
+  || { err "could not add ~/.dotnet/tools to ~/.zprofile; new shells won't find csharp-ls"; FAILED+=("zprofile"); }
 export PATH="$PATH:$HOME/.dotnet/tools"
 
 if has_net10_sdk; then

@@ -216,6 +216,8 @@ mutant c2; mutate replace CLAUDE.md 'do not invoke Serena, including `initial_in
 expect_caught "Serena opt-in restriction removed" "CLAUDE.md: Serena only on explicit request"
 mutant c3; mutate replace CLAUDE.md 'no multi-file regex/sed rewrites' 'multi-file regex/sed rewrites are acceptable'
 expect_caught "multi-file rewrite prohibition removed" "CLAUDE.md: no multi-file regex/sed rewrites"
+mutant c4; mutate replace CLAUDE.md 'inspect available plugin diagnostics' 'optionally glance at plugin diagnostics'
+expect_caught "post-edit diagnostics rule weakened" "CLAUDE.md: post-edit diagnostics"
 
 echo "harness self-check"
 mutant h1; mutate replace "$AGENT" "this text is not in the file" "x"

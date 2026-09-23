@@ -313,6 +313,33 @@ check "the warning says found, with PATH warning" grep -qF "(found, with PATH wa
 check "wrapper first is not warned about" \
   test_fails in_seam "$SHIMBIN:$RAWDIR" 'shadow_warning csharp-ls "$1" "hint"' "$SHIMBIN/csharp-ls"
 
+echo "binaries: link_into_path ownership"
+fixture links
+for u in ln rm; do ln -s "$(command -v "$u")" "$SHIMBIN/$u"; done
+LB="$FDIR/brewbin"; mkdir -p "$LB"
+TARGET="$FDIR/toolchain/clangd"; mkdir -p "$(dirname "$TARGET")"
+printf '#!/bin/sh\nexit 0\n' > "$TARGET"; chmod +x "$TARGET"
+# link_in <name> <target> — link_into_path with BREW_BIN=$LB; returns 1 if it recorded a failure
+link_in() {
+  in_seam "$SHIMBIN" 'BREW_BIN="$1"; link_into_path "$2" "$3"; [[ ${#FAILED[@]} -eq 0 ]]' "$LB" "$@"
+}
+check "links into an empty destination" link_in clangd "$TARGET"
+check "the link points at the target" test "$(readlink "$LB/clangd")" = "$TARGET"
+ln -sf "$FDIR/gone" "$LB/sourcekit-lsp"
+check "replaces an existing (here dangling) symlink" link_in sourcekit-lsp "$TARGET"
+check "the replaced link points at the target" test "$(readlink "$LB/sourcekit-lsp")" = "$TARGET"
+rm -f "$LB/clangd"; printf 'users own clangd\n' > "$LB/clangd"
+check "refuses to replace a regular file it does not own" test_fails link_in clangd "$TARGET"
+check "the regular file is untouched" grep -qx 'users own clangd' "$LB/clangd"
+
+echo "binaries: ~/.zprofile write failure is reported"
+fixture zpfail
+for u in touch tail; do ln -s "$(command -v "$u")" "$SHIMBIN/$u"; done
+printf 'export FOO=1\n' > "$FHOME/.zprofile"; chmod 444 "$FHOME/.zprofile"
+check "add_to_zprofile fails when the profile is not writable" \
+  test_fails in_seam "$SHIMBIN" 'add_to_zprofile "$1"' 'export PATH="$PATH:$HOME/.dotnet/tools"'
+chmod 644 "$FHOME/.zprofile"
+
 # ---- summary -------------------------------------------------------------------
 
 echo

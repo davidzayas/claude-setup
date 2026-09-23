@@ -250,37 +250,64 @@ The official marketplace auto-updates by default, so the plugins stay current. T
 
 ## Uninstalling
 
+The binaries script doesn't record what it installed versus what it found
+already there. Anything already installed was skipped, not taken over, so
+uninstall only what you didn't have before and don't otherwise use. Nothing
+below is a single paste-and-run block, on purpose.
+
+**1. Plugins.** Safe to remove; they only point Claude Code at the servers.
+
 ```bash
-# Plugins — user scope. For project/local installs, run again from that repo
-# with --scope project (or --scope local).
+# User scope. For project/local installs, run again from that repo with
+# --scope project (or --scope local).
 for p in clangd-lsp csharp-lsp gopls-lsp jdtls-lsp kotlin-lsp pyright-lsp rust-analyzer-lsp swift-lsp typescript-lsp; do
   claude plugin uninstall "$p@claude-plugins-official" --scope user
 done
-
-# Language servers (keep go/node/llvm/etc. if you use them for development)
-brew uninstall gopls jdtls kotlin-language-server pyright rust-analyzer typescript-language-server typescript
-brew uninstall llvm                        # only if the script installed it for clangd
-
-# C#: the tool, its wrapper, and (only if nothing else needs .NET 10) the SDK
-/usr/local/share/dotnet/dotnet tool uninstall --global csharp-ls
-rm -f "$(brew --prefix)/bin/csharp-ls"
-brew uninstall --cask dotnet-sdk
-
-# Symlinks the script may have added to Homebrew's bin (Apple-toolchain or llvm
-# clangd, Apple sourcekit-lsp). Homebrew never links these itself.
-for b in clangd sourcekit-lsp; do
-  [ -L "$(brew --prefix)/bin/$b" ] && rm "$(brew --prefix)/bin/$b"
-done
 ```
 
-Finally, delete this line from `~/.zprofile` by hand:
+**2. Homebrew formulae, one at a time.** Check each one first. `brew uses
+--installed <formula>` lists what else depends on it; if you used it before
+running the kit, keep it.
+
+```bash
+brew uses --installed gopls                # then, only if nothing needs it:
+brew uninstall gopls
+# likewise: go, jdtls, kotlin-language-server, pyright, rust-analyzer,
+# typescript-language-server, typescript, and llvm (only if the script
+# installed it for clangd)
+```
+
+**3. C#.** Remove the wrapper only if it is the script's own. The SDK cask
+installs next to any other .NET, so remove it only if nothing else needs
+.NET 10.
+
+```bash
+/usr/local/share/dotnet/dotnet tool uninstall --global csharp-ls
+w="$(brew --prefix)/bin/csharp-ls"
+grep -q "Wrapper created by install-lsp-binaries.sh" "$w" && rm "$w"
+brew uninstall --cask dotnet-sdk           # only if nothing else uses .NET 10
+```
+
+**4. Symlinks the script added** to Homebrew's `bin` for `clangd` or
+`sourcekit-lsp`. Remove one only if it points into Apple's toolchain or
+Homebrew's `llvm`:
+
+```bash
+for b in clangd sourcekit-lsp; do
+  l="$(brew --prefix)/bin/$b"
+  [ -L "$l" ] && echo "$l -> $(readlink "$l")"
+done
+# then: rm "$(brew --prefix)/bin/<name>" for the ones that match
+```
+
+**5. `~/.zprofile`.** Delete this line by hand:
 
 ```bash
 export PATH="$PATH:$HOME/.dotnet/tools"
 ```
 
-If Homebrew itself was installed by the binaries script, remove it with
-Homebrew's own uninstaller (see brew.sh); nothing here does that.
+If the binaries script installed Homebrew itself, remove it with Homebrew's
+own uninstaller (see brew.sh); nothing here does that.
 
 ---
 

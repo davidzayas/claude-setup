@@ -329,6 +329,8 @@ check_code_intelligence() {
     "CLAUDE.md: no multi-file regex/sed rewrites"
   contains CLAUDE.md 'do not invoke Serena, including `initial_instructions`, unless the user explicitly asks' \
     "CLAUDE.md: Serena only on explicit request"
+  contains CLAUDE.md 'inspect available plugin diagnostics and address issues introduced by your changes' \
+    "CLAUDE.md: post-edit diagnostics"
   contains CLAUDE.md 'briefly explain the limitation and use targeted text alternatives' \
     "CLAUDE.md: transparent LSP fallback"
   contains CLAUDE.md 'mandatory stop-on-Codex-MCP-failure rule' \

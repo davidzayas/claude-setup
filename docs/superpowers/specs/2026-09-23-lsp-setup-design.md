@@ -230,7 +230,8 @@ no speculative compatibility edits.
 - `tests/prompt-contract-mutation-test.sh` gains three cases: remove the
   native-LSP preference, corrupt Serena's opt-in restriction, remove the
   multi-file rewrite prohibition. These check wording, not model obedience.
-- New `tests/lsp-plugins-test.sh`: temp fixtures, fake `claude`, fake server
+- New `tests/lsp-plugins-test.sh` (implemented as `tests/lsp-installers-test.sh`,
+  since it also covers the binaries script; see the plan): temp fixtures, fake `claude`, fake server
   binaries, temp HOME/project dirs; never touches live plugin config. Covers
   all nine binary→plugin mappings, partial and zero binary availability,
   marketplace present/absent, and scope forwarding (plus invalid scope).
