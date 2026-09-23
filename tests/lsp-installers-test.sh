@@ -71,7 +71,7 @@ case "$1" in
     case "$2" in
       marketplace)
         case "$3" in
-          list) /bin/cat "$D/marketplaces.txt"; exit 0 ;;
+          list) exec /bin/cat "$D/marketplaces.txt" ;;  # exec: a SIGPIPE shows in the status, as it would for the real CLI
           add)  exit "$(/bin/cat "$D/add_exit")" ;;
         esac ;;
       install)
@@ -195,6 +195,24 @@ fixture noclaude; fake_bins gopls
 check "exits nonzero" test_fails run_plugins
 check "says why" grep -qF "not found on PATH" "$OUT"
 
+echo "plugins: each binary maps to its own plugin"
+set -- $ALL_BINS
+for plugin in $ALL_PLUGINS; do
+  bin="$1"; shift
+  fixture "map-$plugin"; shim_claude; fake_bins "$bin"
+  run_plugins
+  check "$bin installs exactly $plugin" test "$(installed)" = "$plugin"
+done
+
+echo "plugins: long marketplace listing (grep -q must not SIGPIPE the lister)"
+fixture biglist; shim_claude; fake_bins gopls
+{ printf '%s' "$OFFICIAL_LISTING"
+  i=0; while (( i < 6000 )); do echo "  ❯ filler-marketplace-$i"; i=$((i + 1)); done
+} > "$FDIR/marketplaces.txt"
+check "exits 0" run_plugins
+check "recognizes the official marketplace, does not re-add it" \
+  test_fails grep -q '^plugin marketplace add' "$FDIR/claude.log"
+
 # ---- binaries installer: TypeScript shadowing predicate -------------------------
 # Sourced through its test seam under a shim-only PATH with no `uname`: if the
 # seam ever stopped returning early, the script's first real step (the Darwin
@@ -222,6 +240,29 @@ check "nvm copy resolving ahead of Homebrew's is flagged" ts_shadowed_in "$NVM_T
 check "Homebrew's copy resolving first is not flagged" test_fails ts_shadowed_in "$BREW_TS" "$BREW_TS"
 check "no Homebrew copy to compare against is not flagged" test_fails ts_shadowed_in "$NVM_TS" "$FDIR/absent"
 check "not on PATH at all is not flagged" test_fails ts_shadowed_in "" "$BREW_TS"
+
+ln -s "$SHIMBIN" "$FDIR/alias-bin"
+check "same file reached through a symlinked prefix is not flagged" \
+  test_fails ts_shadowed_in "$FDIR/alias-bin/typescript-language-server" "$BREW_TS"
+
+# summary_in <missing> <path-warnings> <failed-steps> — the script's closing
+# verdict via the seam; output in $OUT, returns summarize's status
+summary_in() {
+  env -i PATH="$SHIMBIN" LSP_BINARIES_SOURCE_ONLY=1 /bin/bash -c \
+    'source "$1" && summarize "$2" "$3" "$4"' _ "$BINARIES_SH" "$@" > "$OUT" 2>&1
+}
+
+echo "binaries: closing verdict and exit status"
+fixture summary
+check "clean run exits 0" summary_in 0 0 ""
+check "clean run says all installed" grep -qF "All language servers installed." "$OUT"
+check "PATH warning alone still exits 0" summary_in 0 1 ""
+check "PATH warning is counted in the verdict" grep -qF "with 1 PATH warning(s)" "$OUT"
+check "a missing server exits nonzero" test_fails summary_in 1 0 ""
+check "a failed step exits nonzero" test_fails summary_in 0 0 "llvm"
+summary_in 1 1 "llvm"
+check "issues verdict keeps the PATH-warning count" grep -qF "PATH warnings: 1" "$OUT"
+check "issues verdict names the failed step" grep -qF "Failed steps: llvm" "$OUT"
 
 # ---- summary -------------------------------------------------------------------
 

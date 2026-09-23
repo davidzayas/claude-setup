@@ -7,7 +7,7 @@
 # Each plugin is only installed if its language server binary is on PATH,
 # so run install-lsp-binaries.sh first.
 #
-# Usage: ./install-claude-lsp-plugins.sh [user|project|local]
+# Usage: lsp/install-claude-lsp-plugins.sh [user|project|local]
 #   user    (default) – for you, across all projects
 #   project – for everyone on the repo (writes .claude/settings.json); run from the repo root
 #   local   – for you, in the current repo only
@@ -51,9 +51,10 @@ log "Claude Code $(claude --version 2>/dev/null | head -n1) — scope: $SCOPE"
 # Ensure the official marketplace is registered
 log "Checking marketplace '$MARKETPLACE'"
 # Match the marketplace's own name line (it ends the line), not a "Source:"
-# line or a longer name that merely contains it.
-if claude plugin marketplace list 2>/dev/null \
-     | grep -Eq "(^|[[:space:]])${MARKETPLACE}[[:space:]]*\$"; then
+# line or a longer name that merely contains it. Capture the listing first:
+# piping it straight into grep -q can SIGPIPE the lister under pipefail.
+MARKETPLACES="$(claude plugin marketplace list 2>/dev/null || true)"
+if grep -Eq "(^|[[:space:]])${MARKETPLACE}[[:space:]]*\$" <<< "$MARKETPLACES"; then
   ok "already added"
 else
   if claude plugin marketplace add "$MARKETPLACE_SRC"; then

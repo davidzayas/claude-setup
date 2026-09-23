@@ -53,6 +53,11 @@ Then **start a new Claude Code session**, or run `/reload-plugins` in one that's
 
 Both scripts are safe to re-run. Anything already installed is skipped.
 
+The binaries script exits nonzero when a server is missing or a step failed. For
+example, without Xcode `sourcekit-lsp` is missing. That's expected if you don't
+use that language: the plugins script still installs the plugins for the servers
+you do have.
+
 ---
 
 ## What gets installed
@@ -101,7 +106,7 @@ plugins into that repo's `.claude/settings.json`, so teammates get them when the
    "TypeScript plugin stops working after switching Node versions" below.
 1. **Check the plugins:** `claude plugin list` shows each plugin's scope and
    whether it is enabled. That proves *installed*, not *working*. Then start
-   Claude Code in any project and run `/plugin`. The **Installed** tab should list all nine plugins, and the **Errors** tab should be empty.
+   Claude Code in any project and run `/plugin`. The **Installed** tab should list a plugin for each language server the binaries script found (the plugins script skips the rest), and the **Errors** tab should be empty.
 2. **Test navigation:** Ask Claude something only a language server can answer precisely, such as *"Find every reference to `<some function>` in this codebase."*
 3. **Expect a delay the first time:** The first request in a large Java, Kotlin, or Rust project can take a minute or two while the server indexes. After that it's fast.
 4. **Watch for diagnostics:** When Claude Code shows something like *"Found 3 new diagnostic issues in 2 files,"* press **Ctrl+O** to read them.
@@ -245,16 +250,36 @@ The official marketplace auto-updates by default, so the plugins stay current. T
 ## Uninstalling
 
 ```bash
-# Plugins
+# Plugins — user scope. For project/local installs, run again from that repo
+# with --scope project (or --scope local).
 for p in clangd-lsp csharp-lsp gopls-lsp jdtls-lsp kotlin-lsp pyright-lsp rust-analyzer-lsp swift-lsp typescript-lsp; do
-  claude plugin uninstall "$p@claude-plugins-official"
+  claude plugin uninstall "$p@claude-plugins-official" --scope user
 done
 
-# Language servers (keep go/node/etc. if you use them for development)
-brew uninstall gopls jdtls kotlin-language-server pyright rust-analyzer typescript-language-server
+# Language servers (keep go/node/llvm/etc. if you use them for development)
+brew uninstall gopls jdtls kotlin-language-server pyright rust-analyzer typescript-language-server typescript
+brew uninstall llvm                        # only if the script installed it for clangd
+
+# C#: the tool, its wrapper, and (only if nothing else needs .NET 10) the SDK
 /usr/local/share/dotnet/dotnet tool uninstall --global csharp-ls
 rm -f "$(brew --prefix)/bin/csharp-ls"
+brew uninstall --cask dotnet-sdk
+
+# Symlinks the script may have added to Homebrew's bin (Apple-toolchain or llvm
+# clangd, Apple sourcekit-lsp). Homebrew never links these itself.
+for b in clangd sourcekit-lsp; do
+  [ -L "$(brew --prefix)/bin/$b" ] && rm "$(brew --prefix)/bin/$b"
+done
 ```
+
+Finally, delete this line from `~/.zprofile` by hand:
+
+```bash
+export PATH="$PATH:$HOME/.dotnet/tools"
+```
+
+If Homebrew itself was installed by the binaries script, remove it with
+Homebrew's own uninstaller (see brew.sh); nothing here does that.
 
 ---
 

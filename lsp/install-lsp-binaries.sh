@@ -7,7 +7,7 @@
 # Languages: C/C++, C#, Go, Java, Kotlin, Python, Rust, Swift, TypeScript
 #
 # Safe to re-run: anything already installed is skipped.
-# Usage: ./install-lsp-binaries.sh
+# Usage: lsp/install-lsp-binaries.sh   (exits 1 if any server is missing or a step failed)
 #
 set -uo pipefail
 
@@ -51,7 +51,26 @@ add_to_zprofile() {
 # typescript-language-server exists but PATH resolves a different copy first
 # (typically an npm -g install under nvm/fnm/asdf; see docs/lsp-setup.md).
 ts_shadowed() {
-  [[ -n "$1" && -x "$2" && "$1" != "$2" ]]
+  [[ -n "$1" && -x "$2" && ! "$1" -ef "$2" ]]   # -ef: same file, even via a symlinked prefix
+}
+
+# summarize <missing> <path-warnings> <failed-steps> — prints the closing
+# verdict; returns 1 when anything is missing, broken, or failed (PATH
+# warnings alone do not fail the run).
+summarize() {
+  local missing="$1" warnings="$2" failed="$3"
+  if (( missing == 0 )) && [[ -z "$failed" ]]; then
+    if (( warnings == 0 )); then
+      printf "\033[32mAll language servers installed.\033[0m\n"
+    else
+      printf "\033[32mAll language servers installed\033[0m, with %d PATH warning(s) above.\n" "$warnings"
+    fi
+    return 0
+  fi
+  printf "\033[33mFinished with issues.\033[0m Missing/broken: %d  PATH warnings: %d  Failed steps: %s\n" \
+    "$missing" "$warnings" "${failed:-none}"
+  echo "See the Troubleshooting section of docs/lsp-setup.md."
+  return 1
 }
 
 # Test seam: tests/lsp-installers-test.sh sources this file with
@@ -234,14 +253,8 @@ if have csharp-ls; then
 fi
 
 echo
-if (( MISSING == 0 && ${#FAILED[@]} == 0 && PATH_WARNINGS == 0 )); then
-  printf "\033[32mAll language servers installed.\033[0m\n"
-elif (( MISSING == 0 && ${#FAILED[@]} == 0 )); then
-  printf "\033[32mAll language servers installed\033[0m, with %d PATH warning(s) above.\n" "$PATH_WARNINGS"
-else
-  printf "\033[33mFinished with issues.\033[0m Missing/broken: %d  Failed steps: %s\n" \
-    "$MISSING" "${FAILED[*]:-none}"
-  echo "See the Troubleshooting section of docs/lsp-setup.md."
-fi
+summarize "$MISSING" "$PATH_WARNINGS" "${FAILED[*]:-}"
+STATUS=$?
 echo
 echo "Next: open a new terminal (or run: source ~/.zprofile), then run lsp/install-claude-lsp-plugins.sh"
+exit "$STATUS"
