@@ -70,9 +70,25 @@ backups).
 superpowers plugin the pipeline depends on; the preflight does not check
 plugins, so verify superpowers appears after merging and restarting).
 
+### Optional: LSP code intelligence
+
+The global CLAUDE.md tells every session to use the built-in `LSP` tool
+(definitions, references, call hierarchy) before grep/sed. Give it servers to
+talk to with the hand-run kit in `lsp/`. It is not part of `install.sh`, and
+`uninstall.sh` doesn't undo it:
+
+```bash
+lsp/install-lsp-binaries.sh        # nine language servers (5–15 min; may ask for your password)
+source ~/.zprofile
+lsp/install-claude-lsp-plugins.sh  # matching plugins, user scope, only where the server exists
+```
+
+Then start a new session. Details, scopes, and troubleshooting (C#/.NET 10,
+nvm shadowing TypeScript, desktop-app PATH): `docs/lsp-setup.md`.
+
 ### Run the tests
 
-Three self-contained suites, no dependencies beyond bash, grep, awk
+Four self-contained suites, no dependencies beyond bash, grep, awk
 (plus rsync and python3 for the third). Run them after cloning, and again
 before opening any PR that touches a prompt file, CLAUDE.md, or the scripts:
 
@@ -80,6 +96,7 @@ before opening any PR that touches a prompt file, CLAUDE.md, or the scripts:
 bash tests/uninstall-test.sh              # install/uninstall in a throwaway tmpdir (~10s)
 bash tests/prompt-contract-test.sh        # static contract on the prompt files (<1s)
 bash tests/prompt-contract-mutation-test.sh   # negative tests for the checker (~30s)
+bash tests/lsp-installers-test.sh        # LSP installers against a fake claude (<5s)
 ```
 
 - `uninstall-test.sh` exercises `install.sh`/`uninstall.sh` end to end in a
@@ -97,8 +114,13 @@ bash tests/prompt-contract-mutation-test.sh   # negative tests for the checker (
   claims to: each case plants one defect in a temp copy and expects a FAIL
   line naming that guard. If you change the checker, this is the suite that
   tells you whether you weakened it.
+- `lsp-installers-test.sh` runs the plugins installer against a fake
+  `claude` on a PATH containing only shims: all nine binary→plugin pairs,
+  missing binaries, marketplace absent or look-alike, scopes, a failed
+  install. It also checks the binaries installer's TypeScript shadowing
+  check. It never installs anything for real.
 
-A green run of all three is what "the repo is healthy" means here; the live
+A green run of all four is what "the repo is healthy" means here; the live
 credential check in §1 is separate and still needed once per machine.
 
 ### The backlog
@@ -135,6 +157,11 @@ rejects malformed or duplicate entries.
   `/capex-opex-report`). The skill scans your local transcripts, classifies
   each session by whether the product was in service, and publishes a
   finance-ready artifact. Name any personal repos to exclude.
+- **Reading or refactoring code.** Sessions reach for the built-in `LSP`
+  tool first (CLAUDE.md "Code intelligence"). Renames start from
+  `findReferences` and are edited site by site, never with a multi-file sed.
+  If a language has no server, or the server fails, the session says so in
+  a line and falls back to targeted text search.
 - If the codex MCP server is down, the pipeline **stops and tells you**
   rather than quietly substituting Claude for GPT's role — a Claude review
   of Claude's code is not a second opinion.
@@ -155,3 +182,7 @@ Failure signatures and fixes live in `docs/azure-openai-codex.md`
 429 quota, and the MCP-works-but-CLI-doesn't binary split-brain). Rule of
 thumb: none of those are payload-size problems — report and fix the
 config; don't retry.
+
+LSP problems (plugin shows `Executable not found in $PATH`, C# won't
+start, TypeScript breaks after a Node switch) live in `docs/lsp-setup.md`
+→ Troubleshooting.

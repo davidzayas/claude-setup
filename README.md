@@ -84,11 +84,18 @@ there before install. Uninstalling twice is safe but the second run exits
 nonzero: with no record of *why* the paths are gone, it reports them as
 conflicts rather than claiming success.
 
+## Optional: LSP code intelligence
+
+Sessions follow `CLAUDE.md` → "Code intelligence": the built-in `LSP` tool
+for definitions, references, symbols and call hierarchy, rather than grep/sed.
+That needs the language servers and plugins on the machine. They're a
+separate, hand-run step: [docs/lsp-setup.md](docs/lsp-setup.md).
+
 ## What's here
 
 | File | What it does |
 |---|---|
-| `CLAUDE.md` | The pipeline policy. The core of the setup. |
+| `CLAUDE.md` | The pipeline policy, plus the "Code intelligence" tool policy (built-in `LSP` first). The core of the setup. |
 | `agents/codex-adversary.md` | Subagent that dispatches a review to GPT via the codex MCP tool, quality-gates the response, and returns a structured report. Verifies findings against the code before passing them on — cross-model review only earns its keep if hallucinated findings die there. |
 | `skills/gpt-brainstorming/SKILL.md` | Fork of `superpowers:brainstorming` where GPT generates and Claude facilitates, verifies against the codebase, and scribes. |
 | `skills/capex-opex-report/` | `/capex-opex-report` — monthly capex/opex capitalization report for finance, built from local session transcripts. Scripts count active hours per project; Claude classifies each session by product lifecycle stage; the result is published as an artifact. See its README. |
@@ -101,6 +108,9 @@ conflicts rather than claiming success.
 | `tests/prompt-contract-test.sh` | Static contract checks on the prompt files: markers, byte caps, required strings, TODO schema, and the overlay no-restatement guard. |
 | `tests/prompt-contract-mutation-test.sh` | Negative tests for the checker: plants one defect per case in a temp copy and asserts the checker catches it on a FAIL line naming that guard (or, for false-positive probes, still passes); also checks the uninstall suite skips its pty tests cleanly when `script` cannot allocate one. Needs rsync and python3. |
 | `docs/azure-openai-codex.md` | Azure OpenAI runbook: Codex config, version pin, env delivery, verification. |
+| `lsp/` | Optional LSP kit, run by hand (never by install.sh; not undone by uninstall.sh): `install-lsp-binaries.sh` installs nine language servers, `install-claude-lsp-plugins.sh [user\|project\|local]` installs the matching official plugins where the server exists. |
+| `docs/lsp-setup.md` | LSP runbook: install order, scopes, verification, troubleshooting (C#/.NET 10, nvm shadowing, desktop-app PATH), uninstalling. |
+| `tests/lsp-installers-test.sh` | Tests the plugins installer against a fake `claude` on a shim-only PATH, and the binaries installer's TypeScript shadowing check. Never touches real plugin config. |
 
 ## Requirements
 
@@ -157,6 +167,9 @@ many turns.
 
 - **Vendor skills** (Stripe, Railway) — install from their sources.
 - **`plugins/`** — `settings.json` declares them; they reinstall themselves.
+  The nine `*-lsp` plugins are the exception: `settings.json` deliberately
+  omits them, and `lsp/install-claude-lsp-plugins.sh` installs each one only
+  where its language server exists.
 - **Everything else in `~/.claude`** — `projects/` alone is hundreds of MB of
   full session transcripts, and `history.jsonl`, `debug/`, and
   `shell-snapshots/` are similar. This is a separate repo rather than a

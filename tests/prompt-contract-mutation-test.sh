@@ -209,6 +209,16 @@ expect_caught "rule that follows an unpunctuated bullet and a paragraph break" "
 mutant r9; mutate append_to_overlay "$CMD" second-opinion gpt-6-astra "Attack that position constructively."
 expect_caught "rule that follows the {claude_position} slot (second-opinion)" "restates a baseline clause: \"Attack that position constructively"
 
+echo "code-intelligence guards (CLAUDE.md)"
+mutant c1; mutate replace CLAUDE.md 'Prefer built-in `LSP` for supported semantic code queries' 'Consider built-in `LSP` for supported semantic code queries'
+expect_caught "LSP-first preference weakened" "CLAUDE.md: prefers built-in LSP for semantic queries"
+mutant c2; mutate replace CLAUDE.md 'do not invoke Serena, including `initial_instructions`, unless the user explicitly asks' 'invoke Serena, including `initial_instructions`, whenever it helps'
+expect_caught "Serena opt-in restriction removed" "CLAUDE.md: Serena only on explicit request"
+mutant c3; mutate replace CLAUDE.md 'no multi-file regex/sed rewrites' 'multi-file regex/sed rewrites are acceptable'
+expect_caught "multi-file rewrite prohibition removed" "CLAUDE.md: no multi-file regex/sed rewrites"
+mutant c4; mutate replace CLAUDE.md 'inspect available plugin diagnostics' 'optionally glance at plugin diagnostics'
+expect_caught "post-edit diagnostics rule weakened" "CLAUDE.md: post-edit diagnostics"
+
 echo "harness self-check"
 mutant h1; mutate replace "$AGENT" "this text is not in the file" "x"
 if [[ -n "$BROKEN" ]]; then ok "a mutation whose target is absent marks the case broken"; else bad "an absent mutation target went unnoticed"; fi

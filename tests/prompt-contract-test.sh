@@ -310,9 +310,37 @@ check_claude_md() {
     "CLAUDE.md: stop-on-MCP-failure rule present"
 }
 
+# The "Code intelligence" policy (docs/superpowers/specs/2026-09-23-lsp-setup-design.md).
+# These pin wording, not model obedience.
+check_code_intelligence() {
+  local op
+  exactly_once CLAUDE.md '^## Code intelligence$' \
+    "CLAUDE.md: code-intelligence section exactly once"
+  contains CLAUDE.md 'Prefer built-in `LSP` for supported semantic code queries' \
+    "CLAUDE.md: prefers built-in LSP for semantic queries"
+  for op in documentSymbol workspaceSymbol goToDefinition goToImplementation hover \
+            findReferences prepareCallHierarchy incomingCalls outgoingCalls; do
+    contains CLAUDE.md "\`$op\`" "CLAUDE.md: names LSP operation $op"
+  done
+  contains CLAUDE.md 'positions are 1-based' "CLAUDE.md: LSP positions are 1-based"
+  contains CLAUDE.md 'use `findReferences` to enumerate every usage site' \
+    "CLAUDE.md: reference-first renames"
+  contains CLAUDE.md 'no multi-file regex/sed rewrites' \
+    "CLAUDE.md: no multi-file regex/sed rewrites"
+  contains CLAUDE.md 'do not invoke Serena, including `initial_instructions`, unless the user explicitly asks' \
+    "CLAUDE.md: Serena only on explicit request"
+  contains CLAUDE.md 'inspect available plugin diagnostics and address issues introduced by your changes' \
+    "CLAUDE.md: post-edit diagnostics"
+  contains CLAUDE.md 'briefly explain the limitation and use targeted text alternatives' \
+    "CLAUDE.md: transparent LSP fallback"
+  contains CLAUDE.md 'mandatory stop-on-Codex-MCP-failure rule' \
+    "CLAUDE.md: LSP fallback keeps the Codex stop rule"
+}
+
 main() {
   echo "prompt-contract-test: $REPO"
   check_claude_md
+  check_code_intelligence
   check_alias_registry
   check_ideation
   check_review_agent
