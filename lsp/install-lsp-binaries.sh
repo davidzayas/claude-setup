@@ -56,6 +56,13 @@ add_to_zprofile() {
   echo "$line" >> "$f"
 }
 
+# add_dotnet_tools_to_zprofile — persist ~/.dotnet/tools on PATH for new
+# shells; a failed write is a failed step, not a silent success.
+add_dotnet_tools_to_zprofile() {
+  add_to_zprofile 'export PATH="$PATH:$HOME/.dotnet/tools"' \
+    || { err "could not add ~/.dotnet/tools to ~/.zprofile; new shells won't find csharp-ls"; FAILED+=("zprofile"); }
+}
+
 # path_shadowed <resolved-path> <expected-path> — true when the expected copy
 # exists but PATH resolves a different one first (e.g. an nvm-installed
 # typescript-language-server, or raw ~/.dotnet/tools/csharp-ls ahead of the
@@ -191,8 +198,7 @@ else
     || { err ".NET 10+ SDK still not found at $DOTNET_NEW_ROOT"; FAILED+=("dotnet-sdk"); }
 fi
 
-add_to_zprofile 'export PATH="$PATH:$HOME/.dotnet/tools"' \
-  || { err "could not add ~/.dotnet/tools to ~/.zprofile; new shells won't find csharp-ls"; FAILED+=("zprofile"); }
+add_dotnet_tools_to_zprofile
 export PATH="$PATH:$HOME/.dotnet/tools"
 
 if has_net10_sdk; then

@@ -339,6 +339,13 @@ printf 'export FOO=1\n' > "$FHOME/.zprofile"; chmod 444 "$FHOME/.zprofile"
 check "add_to_zprofile fails when the profile is not writable" \
   test_fails in_seam "$SHIMBIN" 'add_to_zprofile "$1"' 'export PATH="$PATH:$HOME/.dotnet/tools"'
 chmod 644 "$FHOME/.zprofile"
+# An owner can touch a read-only file, so fake a touch that always fails to
+# reach the `touch || return 1` guard on its own.
+rm -f "$SHIMBIN/touch"; printf '#!/bin/sh\nexit 1\n' > "$SHIMBIN/touch"; chmod +x "$SHIMBIN/touch"
+check "add_to_zprofile fails when touch fails" \
+  test_fails in_seam "$SHIMBIN" 'add_to_zprofile "$1"' 'export PATH="$PATH:$HOME/.dotnet/tools"'
+check "the caller records a failed zprofile step" \
+  in_seam "$SHIMBIN" 'add_dotnet_tools_to_zprofile >/dev/null; [[ " ${FAILED[*]:-} " == *" zprofile "* ]]'
 
 # ---- summary -------------------------------------------------------------------
 
