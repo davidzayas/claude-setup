@@ -91,3 +91,19 @@ when a recorded smoke or review failure names it, and must not restate the
 rule's content — the contract test rejects any baseline clause it extracts
 (25 bytes or longer) that an overlay repeats verbatim; paraphrase is a
 review matter, not a mechanical one.
+
+## Code intelligence
+- Prefer built-in `LSP` for supported semantic code queries over text-search approximations.
+- Prefer built-in LSP over Serena's symbol tools; do not invoke Serena, including `initial_instructions`, unless the user explicitly asks.
+- Use `documentSymbol` for file structure and `workspaceSymbol` to discover project symbols.
+- Use `goToDefinition` and `goToImplementation` to locate declarations and implementations; use `hover` for types and documentation.
+- Use `findReferences` to investigate usages and assess change impact.
+- Before renames or signature changes, use `findReferences` to enumerate every usage site, then edit the declaration and each usage with ordinary editing tools—no multi-file regex/sed rewrites.
+- Use `prepareCallHierarchy`, then `incomingCalls` or `outgoingCalls`, to investigate call relationships.
+- Use file discovery or scoped text search to locate a starting file or symbol when needed; then use LSP for semantic queries.
+- LSP line and character positions are 1-based; derive them from current file content.
+- Use ordinary editing tools for changes; built-in LSP does not edit or rename code.
+- Use text tools directly for literal searches, documentation/configuration, and unsupported languages or operations.
+- After edits, inspect available plugin diagnostics and address issues introduced by your changes; diagnostics do not replace project checks.
+- If LSP is unavailable, fails, or is inconclusive, briefly explain the limitation and use targeted text alternatives; empty results alone do not prove absence.
+- These preferences and fallbacks do not change the cross-model pipeline or its mandatory stop-on-Codex-MCP-failure rule.
