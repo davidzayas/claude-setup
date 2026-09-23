@@ -50,7 +50,10 @@ log "Claude Code $(claude --version 2>/dev/null | head -n1) — scope: $SCOPE"
 
 # Ensure the official marketplace is registered
 log "Checking marketplace '$MARKETPLACE'"
-if claude plugin marketplace list 2>/dev/null | grep -q "$MARKETPLACE"; then
+# Match the marketplace's own name line (it ends the line), not a "Source:"
+# line or a longer name that merely contains it.
+if claude plugin marketplace list 2>/dev/null \
+     | grep -Eq "(^|[[:space:]])${MARKETPLACE}[[:space:]]*\$"; then
   ok "already added"
 else
   if claude plugin marketplace add "$MARKETPLACE_SRC"; then
@@ -87,6 +90,6 @@ echo "  Skipped:   ${SKIPPED[*]:-none}"
 echo "  Failed:    ${FAILED[*]:-none}"
 echo
 echo "Start a new Claude Code session (or run /reload-plugins in an open one)."
-echo "Check /plugin → Errors if a language server does not start; see README.md → Troubleshooting."
+echo "Check /plugin → Errors if a language server does not start; see docs/lsp-setup.md → Troubleshooting."
 
 [[ ${#FAILED[@]} -eq 0 ]]
