@@ -47,6 +47,18 @@ add_to_zprofile() {
   grep -qxF "$line" "$HOME/.zprofile" || echo "$line" >> "$HOME/.zprofile"
 }
 
+# ts_shadowed <resolved-path> <homebrew-path> — true when Homebrew's
+# typescript-language-server exists but PATH resolves a different copy first
+# (typically an npm -g install under nvm/fnm/asdf; see docs/lsp-setup.md).
+ts_shadowed() {
+  [[ -n "$1" && -x "$2" && "$1" != "$2" ]]
+}
+
+# Test seam: tests/lsp-installers-test.sh sources this file with
+# LSP_BINARIES_SOURCE_ONLY=1 to reach the helpers above without provisioning.
+# (`return` fails when executed rather than sourced, hence the exit fallback.)
+if [[ "${LSP_BINARIES_SOURCE_ONLY:-0}" == 1 ]]; then return 0 2>/dev/null || exit 0; fi
+
 # ---------- prerequisites ----------------------------------------------------
 [[ "$(uname)" == "Darwin" ]] || { echo "This script is for macOS only."; exit 1; }
 
@@ -195,12 +207,19 @@ brew_install typescript
 hash -r
 log "Verifying binaries"
 MISSING=0
+PATH_WARNINGS=0
 for bin in clangd csharp-ls gopls jdtls kotlin-language-server pyright-langserver \
            rust-analyzer sourcekit-lsp typescript-language-server; do
-  if have "$bin"; then
-    ok "$(printf '%-28s' "$bin") $(command -v "$bin")"
-  else
+  if ! have "$bin"; then
     err "$(printf '%-28s' "$bin") NOT FOUND"; MISSING=$((MISSING + 1))
+  elif [[ "$bin" == typescript-language-server ]] \
+       && ts_shadowed "$(command -v "$bin")" "$BREW_BIN/$bin"; then
+    warn "$(printf '%-28s' "$bin") $(command -v "$bin") (found, with PATH warning)"
+    warn "  Homebrew's copy at $BREW_BIN/$bin is shadowed; it breaks when you switch Node versions."
+    warn "  See docs/lsp-setup.md: \"TypeScript plugin stops working after switching Node versions\"."
+    PATH_WARNINGS=$((PATH_WARNINGS + 1))
+  else
+    ok "$(printf '%-28s' "$bin") $(command -v "$bin")"
   fi
 done
 
@@ -209,18 +228,20 @@ if have csharp-ls; then
   if v="$(csharp-ls --version 2>&1)"; then
     ok "csharp-ls launches: ${v%%+*}"
   else
-    err "csharp-ls is installed but won't start — see 'csharp-ls won't start' in README.md"
+    err "csharp-ls is installed but won't start — see 'csharp-ls won't start' in docs/lsp-setup.md"
     MISSING=$((MISSING + 1))
   fi
 fi
 
 echo
-if (( MISSING == 0 && ${#FAILED[@]} == 0 )); then
+if (( MISSING == 0 && ${#FAILED[@]} == 0 && PATH_WARNINGS == 0 )); then
   printf "\033[32mAll language servers installed.\033[0m\n"
+elif (( MISSING == 0 && ${#FAILED[@]} == 0 )); then
+  printf "\033[32mAll language servers installed\033[0m, with %d PATH warning(s) above.\n" "$PATH_WARNINGS"
 else
   printf "\033[33mFinished with issues.\033[0m Missing/broken: %d  Failed steps: %s\n" \
     "$MISSING" "${FAILED[*]:-none}"
-  echo "See the Troubleshooting section of README.md."
+  echo "See the Troubleshooting section of docs/lsp-setup.md."
 fi
 echo
-echo "Next: open a new terminal (or run: source ~/.zprofile), then run ./install-claude-lsp-plugins.sh"
+echo "Next: open a new terminal (or run: source ~/.zprofile), then run lsp/install-claude-lsp-plugins.sh"

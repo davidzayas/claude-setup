@@ -195,6 +195,34 @@ fixture noclaude; fake_bins gopls
 check "exits nonzero" test_fails run_plugins
 check "says why" grep -qF "not found on PATH" "$OUT"
 
+# ---- binaries installer: TypeScript shadowing predicate -------------------------
+# Sourced through its test seam under a shim-only PATH with no `uname`: if the
+# seam ever stopped returning early, the script's first real step (the Darwin
+# check) exits 1 before provisioning anything, and these cases fail.
+
+# ts_shadowed_in <resolved> <homebrew> — the script's predicate, via the seam
+ts_shadowed_in() {
+  env -i PATH="$SHIMBIN" LSP_BINARIES_SOURCE_ONLY=1 /bin/bash -c \
+    'source "$1" && ts_shadowed "$2" "$3"' _ "$BINARIES_SH" "$1" "$2"
+}
+
+echo "binaries: sourcing through the seam provisions nothing"
+fixture seam
+check "sourcing prints nothing and returns 0" \
+  test "$(env -i PATH="$SHIMBIN" LSP_BINARIES_SOURCE_ONLY=1 /bin/bash -c \
+           'source "$1" && echo sourced-ok' _ "$BINARIES_SH" 2>&1)" = "sourced-ok"
+
+echo "binaries: TypeScript shadowing"
+fixture ts
+BREW_TS="$SHIMBIN/typescript-language-server"
+NVM_TS="$FHOME/.nvm/versions/node/v22/bin/typescript-language-server"
+mkdir -p "$(dirname "$NVM_TS")"
+for f in "$BREW_TS" "$NVM_TS"; do printf '#!/bin/sh\nexit 0\n' > "$f"; chmod +x "$f"; done
+check "nvm copy resolving ahead of Homebrew's is flagged" ts_shadowed_in "$NVM_TS" "$BREW_TS"
+check "Homebrew's copy resolving first is not flagged" test_fails ts_shadowed_in "$BREW_TS" "$BREW_TS"
+check "no Homebrew copy to compare against is not flagged" test_fails ts_shadowed_in "$NVM_TS" "$FDIR/absent"
+check "not on PATH at all is not flagged" test_fails ts_shadowed_in "" "$BREW_TS"
+
 # ---- summary -------------------------------------------------------------------
 
 echo
