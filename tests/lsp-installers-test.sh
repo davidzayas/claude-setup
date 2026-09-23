@@ -221,7 +221,7 @@ check "recognizes the official marketplace, does not re-add it" \
 # ts_shadowed_in <resolved> <homebrew> — the script's predicate, via the seam
 ts_shadowed_in() {
   env -i PATH="$SHIMBIN" LSP_BINARIES_SOURCE_ONLY=1 /bin/bash -c \
-    'source "$1" && ts_shadowed "$2" "$3"' _ "$BINARIES_SH" "$1" "$2"
+    'source "$1" && path_shadowed "$2" "$3"' _ "$BINARIES_SH" "$1" "$2"
 }
 
 echo "binaries: sourcing through the seam provisions nothing"
@@ -263,6 +263,55 @@ check "a failed step exits nonzero" test_fails summary_in 0 0 "llvm"
 summary_in 1 1 "llvm"
 check "issues verdict keeps the PATH-warning count" grep -qF "PATH warnings: 1" "$OUT"
 check "issues verdict names the failed step" grep -qF "Failed steps: llvm" "$OUT"
+
+# in_seam <PATH> <bash snippet> [args...] — run a snippet after sourcing the
+# binaries script through its seam, with HOME=$FHOME and the given PATH
+in_seam() {
+  local path="$1" snippet="$2"; shift 2
+  env -i PATH="$path" HOME="$FHOME" LSP_BINARIES_SOURCE_ONLY=1 /bin/bash -c \
+    'source "$0" && '"$snippet" "$BINARIES_SH" "$@"
+}
+
+echo "binaries: csharp-ls wrapper is written safely"
+fixture wrapper
+for u in rm cat chmod; do ln -s "$(command -v "$u")" "$SHIMBIN/$u"; done
+REAL="$FHOME/.dotnet/tools/csharp-ls"; mkdir -p "$(dirname "$REAL")"
+printf 'REAL-BINARY\n' > "$REAL"; chmod +x "$REAL"
+WRAP="$FDIR/brewbin/csharp-ls"; mkdir -p "$(dirname "$WRAP")"
+ln -s "$REAL" "$WRAP"
+check "replaces a symlink at the wrapper path" in_seam "$SHIMBIN" 'write_csharp_wrapper "$1" "$2"' "$WRAP" /usr/local/share/dotnet
+check "does not write through it into the real csharp-ls" test "$(cat "$REAL")" = "REAL-BINARY"
+check "leaves a regular, executable wrapper" test -f "$WRAP" -a ! -L "$WRAP" -a -x "$WRAP"
+check "wrapper pins DOTNET_ROOT" grep -qx 'export DOTNET_ROOT=/usr/local/share/dotnet' "$WRAP"
+check "rewrites its own earlier wrapper" in_seam "$SHIMBIN" 'write_csharp_wrapper "$1" "$2"' "$WRAP" /opt/dotnet10
+check "rewrite picks up the new root" grep -qx 'export DOTNET_ROOT=/opt/dotnet10' "$WRAP"
+FOREIGN="$FDIR/brewbin/foreign"; printf '#!/bin/sh\necho mine\n' > "$FOREIGN"
+check "refuses to overwrite a file it did not create" test_fails in_seam "$SHIMBIN" 'write_csharp_wrapper "$1" "$2"' "$FOREIGN" /x
+check "the foreign file is untouched" grep -qx 'echo mine' "$FOREIGN"
+
+echo "binaries: ~/.zprofile append"
+fixture zprofile
+for u in touch tail; do ln -s "$(command -v "$u")" "$SHIMBIN/$u"; done
+LINE='export PATH="$PATH:$HOME/.dotnet/tools"'
+printf 'export FOO=1' > "$FHOME/.zprofile"
+in_seam "$SHIMBIN" 'add_to_zprofile "$1"' "$LINE"
+check "a last line without a newline is not glued to the new line" \
+  test "$(cat "$FHOME/.zprofile")" = "$(printf 'export FOO=1\n%s' "$LINE")"
+in_seam "$SHIMBIN" 'add_to_zprofile "$1"' "$LINE"
+check "a second run adds nothing" test "$(grep -cxF "$LINE" "$FHOME/.zprofile")" = 1
+rm -f "$FHOME/.zprofile"
+in_seam "$SHIMBIN" 'add_to_zprofile "$1"' "$LINE"
+check "a missing file gets just the line" test "$(cat "$FHOME/.zprofile")" = "$LINE"
+
+echo "binaries: csharp-ls wrapper shadowed on PATH"
+fixture csshadow
+RAWDIR="$FDIR/dotnet-tools"; mkdir -p "$RAWDIR"
+for d in "$RAWDIR" "$SHIMBIN"; do printf '#!/bin/sh\nexit 0\n' > "$d/csharp-ls"; chmod +x "$d/csharp-ls"; done
+check "raw tool ahead of the wrapper is warned about" \
+  in_seam "$RAWDIR:$SHIMBIN" 'shadow_warning csharp-ls "$1" "hint" >"$2"' "$SHIMBIN/csharp-ls" "$OUT"
+check "the warning says found, with PATH warning" grep -qF "(found, with PATH warning)" "$OUT"
+check "wrapper first is not warned about" \
+  test_fails in_seam "$SHIMBIN:$RAWDIR" 'shadow_warning csharp-ls "$1" "hint"' "$SHIMBIN/csharp-ls"
 
 # ---- summary -------------------------------------------------------------------
 

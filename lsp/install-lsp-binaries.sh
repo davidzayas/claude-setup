@@ -6,7 +6,8 @@
 #
 # Languages: C/C++, C#, Go, Java, Kotlin, Python, Rust, Swift, TypeScript
 #
-# Safe to re-run: anything already installed is skipped.
+# Safe to re-run: anything already installed is skipped, except csharp-ls,
+# which is updated to its latest release on every run.
 # Usage: lsp/install-lsp-binaries.sh   (exits 1 if any server is missing or a step failed)
 #
 set -uo pipefail
@@ -42,16 +43,52 @@ link_into_path() {
 }
 
 add_to_zprofile() {
-  local line="$1"
-  touch "$HOME/.zprofile"
-  grep -qxF "$line" "$HOME/.zprofile" || echo "$line" >> "$HOME/.zprofile"
+  local line="$1" f="$HOME/.zprofile"
+  touch "$f"
+  grep -qxF "$line" "$f" && return 0
+  # Start on a fresh line if the file doesn't end with one.
+  if [[ -s "$f" && -n "$(tail -c1 "$f")" ]]; then echo >> "$f"; fi
+  echo "$line" >> "$f"
 }
 
-# ts_shadowed <resolved-path> <homebrew-path> — true when Homebrew's
-# typescript-language-server exists but PATH resolves a different copy first
-# (typically an npm -g install under nvm/fnm/asdf; see docs/lsp-setup.md).
-ts_shadowed() {
+# path_shadowed <resolved-path> <expected-path> — true when the expected copy
+# exists but PATH resolves a different one first (e.g. an nvm-installed
+# typescript-language-server, or raw ~/.dotnet/tools/csharp-ls ahead of the
+# wrapper; see docs/lsp-setup.md).
+path_shadowed() {
   [[ -n "$1" && -x "$2" && ! "$1" -ef "$2" ]]   # -ef: same file, even via a symlinked prefix
+}
+
+# shadow_warning <bin> <expected-path> <why> — prints the PATH warning and
+# returns 0 when <bin> resolves somewhere other than <expected-path>.
+shadow_warning() {
+  local bin="$1" want="$2" why="$3" got
+  got="$(command -v "$bin")"
+  path_shadowed "$got" "$want" || return 1
+  warn "$(printf '%-28s' "$bin") $got (found, with PATH warning)"
+  warn "  $want is shadowed; $why"
+  return 0
+}
+
+# write_csharp_wrapper <dest> <dotnet-root> — (re)writes the csharp-ls wrapper.
+# Replaces a symlink rather than writing through it (which would overwrite the
+# real csharp-ls), and refuses to overwrite a regular file it did not create.
+# Returns 1 when it leaves <dest> alone or cannot write it.
+CSHARP_WRAPPER_MARK="Wrapper created by install-lsp-binaries.sh"
+write_csharp_wrapper() {
+  local dest="$1" root="$2"
+  if [[ -f "$dest" && ! -L "$dest" ]] && ! grep -qF "$CSHARP_WRAPPER_MARK" "$dest"; then
+    return 1
+  fi
+  rm -f "$dest" || return 1
+  cat > "$dest" <<EOF || return 1
+#!/bin/sh
+# $CSHARP_WRAPPER_MARK: run csharp-ls on the .NET 10 runtime
+# regardless of any DOTNET_ROOT set for older .NET versions.
+export DOTNET_ROOT=$root
+exec "\$HOME/.dotnet/tools/csharp-ls" "\$@"
+EOF
+  chmod +x "$dest"
 }
 
 # summarize <missing> <path-warnings> <failed-steps> — prints the closing
@@ -164,15 +201,12 @@ if has_net10_sdk; then
   fi
 
   if [[ -x "$CSHARP_LS_REAL" ]]; then
-    cat > "$BREW_BIN/csharp-ls" << EOF
-#!/bin/sh
-# Wrapper created by install-lsp-binaries.sh: run csharp-ls on the .NET 10 runtime
-# regardless of any DOTNET_ROOT set for older .NET versions.
-export DOTNET_ROOT=$DOTNET_NEW_ROOT
-exec "\$HOME/.dotnet/tools/csharp-ls" "\$@"
-EOF
-    chmod +x "$BREW_BIN/csharp-ls"
-    ok "wrapper written to $BREW_BIN/csharp-ls"
+    if write_csharp_wrapper "$BREW_BIN/csharp-ls" "$DOTNET_NEW_ROOT"; then
+      ok "wrapper written to $BREW_BIN/csharp-ls"
+    else
+      err "could not write the wrapper at $BREW_BIN/csharp-ls (a file there is not this script's wrapper, or it isn't writable); left it alone"
+      FAILED+=("csharp-ls-wrapper")
+    fi
   fi
 fi
 
@@ -231,11 +265,11 @@ for bin in clangd csharp-ls gopls jdtls kotlin-language-server pyright-langserve
            rust-analyzer sourcekit-lsp typescript-language-server; do
   if ! have "$bin"; then
     err "$(printf '%-28s' "$bin") NOT FOUND"; MISSING=$((MISSING + 1))
-  elif [[ "$bin" == typescript-language-server ]] \
-       && ts_shadowed "$(command -v "$bin")" "$BREW_BIN/$bin"; then
-    warn "$(printf '%-28s' "$bin") $(command -v "$bin") (found, with PATH warning)"
-    warn "  Homebrew's copy at $BREW_BIN/$bin is shadowed; it breaks when you switch Node versions."
-    warn "  See docs/lsp-setup.md: \"TypeScript plugin stops working after switching Node versions\"."
+  elif [[ "$bin" == typescript-language-server ]] && shadow_warning "$bin" "$BREW_BIN/$bin" \
+         "it breaks when you switch Node versions. See docs/lsp-setup.md: \"TypeScript plugin stops working after switching Node versions\"."; then
+    PATH_WARNINGS=$((PATH_WARNINGS + 1))
+  elif [[ "$bin" == csharp-ls ]] && shadow_warning "$bin" "$BREW_BIN/$bin" \
+         "the raw tool runs without the .NET 10 DOTNET_ROOT. Put $BREW_BIN ahead of ~/.dotnet/tools on PATH (docs/lsp-setup.md: 'csharp-ls won't start')."; then
     PATH_WARNINGS=$((PATH_WARNINGS + 1))
   else
     ok "$(printf '%-28s' "$bin") $(command -v "$bin")"

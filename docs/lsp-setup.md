@@ -51,7 +51,8 @@ lsp/install-claude-lsp-plugins.sh
 
 Then **start a new Claude Code session**, or run `/reload-plugins` in one that's already open.
 
-Both scripts are safe to re-run. Anything already installed is skipped.
+Both scripts are safe to re-run. Anything already installed is skipped, except
+`csharp-ls`: the binaries script updates it to its latest release on every run.
 
 The binaries script exits nonzero when a server is missing or a step failed. For
 example, without Xcode `sourcekit-lsp` is missing. That's expected if you don't
@@ -178,7 +179,7 @@ hash -r
 which csharp-ls        # → /opt/homebrew/bin/csharp-ls (or /usr/local/bin on Intel)
 csharp-ls --version    # → csharp-ls, 0.28.0 ...
 ```
-The wrapper works because Homebrew's `bin` comes before `~/.dotnet/tools` on your PATH, so both your shell and Claude Code find the wrapper first.
+The wrapper works because Homebrew's `bin` comes before `~/.dotnet/tools` on your PATH, so both your shell and Claude Code find the wrapper first. If your PATH has them the other way round, the binaries script reports `csharp-ls … (found, with PATH warning)`. The script also refuses to overwrite a `csharp-ls` file in Homebrew's `bin` that it didn't create. It replaces a symlink there rather than writing through it into the real tool.
 
 **Alternative:** Change `DOTNET_ROOT` globally. Find where it's set with `grep -n DOTNET_ROOT ~/.zprofile ~/.zshrc` and change that line to `export DOTNET_ROOT=/usr/local/share/dotnet`. This can break *other* .NET 8 global tools you have installed, which is why the wrapper is preferred.
 
